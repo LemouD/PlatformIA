@@ -1,0 +1,19 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Next.js / Vercel / Supabase
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
+.vercel/
+supabase/.temp/
+
+# Documents locaux
+*.md
+!README.md
