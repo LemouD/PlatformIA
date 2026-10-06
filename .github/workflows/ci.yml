@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Le jeton du workflow ne peut que lire le dépôt. Aucun secret n'est utilisé ici :
+# une PR ne peut donc rien exfiltrer en modifiant ce fichier.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Recherche de secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+
+      - name: Aucun fichier .env versionné
+        run: |
+          suivis=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)
+          if [ -n "$suivis" ]; then
+            echo "::error::Fichiers .env versionnés : $suivis"
+            exit 1
+          fi
+
+      - name: Aucun secret dans une variable NEXT_PUBLIC_
+        run: |
+          trouves=$(git grep -nE 'NEXT_PUBLIC_[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE|PASSWORD|TOKEN|API_KEY)' -- . ':!.github/workflows/ci.yml' || true)
+          if [ -n "$trouves" ]; then
+            echo "::error::Une variable NEXT_PUBLIC_ est exposée au navigateur et ne doit pas porter de secret."
+            echo "$trouves"
+            exit 1
+          fi
+
+  verifications:
+    name: Lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # Installation figée sur le fichier de verrouillage, scripts d'installation
+      # des dépendances désactivés.
+      - name: Installation
+        run: npm ci --ignore-scripts
+
+      - name: Signatures du registre
+        run: npm audit signatures
+
+      # Bloquant : vulnérabilité haute ou critique dans ce qui est livré avec l'application.
+      - name: Audit des dépendances de production
+        run: npm audit --omit=dev --audit-level=high
+
+      # Informatif : l'outillage de développement ne traite que nos propres fichiers.
+      # À relire à chaque PR ; une alerte qui devient exploitable passe en bloquant.
+      - name: Audit des dépendances de développement
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
