@@ -39,6 +39,11 @@ describe('STATE_MOTION', () => {
     expect(STATE_MOTION.ERROR).toMatchObject({ heartbeat: 0.7, irregular: true, blinks: false })
   })
 
+  it('blinks only with open eyes: idle, working and waiting', () => {
+    const blinking = AGENT_STATUSES.filter((status) => STATE_MOTION[status].blinks)
+    expect(blinking).toEqual(['IDLE', 'WORKING', 'WAITING_APPROVAL'])
+  })
+
   it('maps gesture states to their pose', () => {
     expect(STATE_MOTION.WAITING_APPROVAL.pose).toBe('tray')
     expect(STATE_MOTION.ERROR.pose).toBe('antenna-bent')

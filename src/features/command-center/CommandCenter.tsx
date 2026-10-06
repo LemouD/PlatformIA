@@ -1,5 +1,6 @@
 import { formatHandoffChain } from '@/domain/selectors'
 import type { CommandCenterSnapshot } from '@/domain/types'
+import { AgentStates } from './AgentStates'
 import { CommandInput } from './CommandInput'
 import { ContextStrip } from './ContextStrip'
 import { EcosystemPanel } from './EcosystemPanel'
@@ -22,6 +23,7 @@ export function CommandCenter({ snapshot }: CommandCenterProps) {
         <div className="flex flex-col gap-3.5">
           <LiveActivity entries={snapshot.activity} />
           <SystemStatus health={snapshot.health} metrics={buildSystemMetrics(snapshot)} />
+          <AgentStates />
         </div>
       </div>
 
