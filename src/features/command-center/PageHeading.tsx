@@ -8,7 +8,7 @@ import { LiveClock } from './LiveClock'
 const ACTION_BASE =
   'flex h-[42px] items-center gap-[9px] rounded-control border px-[15px] text-[11px] font-semibold'
 const ACTION_SECONDARY = `${ACTION_BASE} border-line bg-surface text-ink-soft`
-const ACTION_PRIMARY = `${ACTION_BASE} border-accent bg-accent text-white`
+const ACTION_PRIMARY = `${ACTION_BASE} border-accent bg-accent text-canvas`
 
 function focusCommandInput() {
   document.getElementById(COMMAND_INPUT_ID)?.focus()
@@ -19,7 +19,7 @@ export function PageHeading() {
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="flex flex-col gap-[7px]">
         <LiveClock />
-        <h1 className="text-[32px] leading-none text-ink">Command center</h1>
+        <h1 className="font-display text-[32px] leading-none italic text-ink">Command center</h1>
         <p className="text-xs text-ink-muted">
           A live view of your personal AI ecosystem and the entities working inside it.
         </p>
