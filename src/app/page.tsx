@@ -1,3 +1,6 @@
+import { CommandCenter } from '@/features/command-center/CommandCenter'
+import { mockSnapshot } from '@/mocks/snapshot'
+
 export default function CommandCenterPage() {
-  return <h1 className="px-9 pt-[30px] text-[32px]">Command center</h1>
+  return <CommandCenter snapshot={mockSnapshot} />
 }
