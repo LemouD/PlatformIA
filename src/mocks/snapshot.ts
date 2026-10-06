@@ -18,7 +18,7 @@ export const mockSnapshot: CommandCenterSnapshot = {
     runningTasks: 12,
     apiUptime: 99.9,
     tokens: 12_400,
-    costToday: 2.41,
+    costTodayUsd: 2.41,
   },
   health: 'nominal',
   syncedAt: at(16, 42, 42),

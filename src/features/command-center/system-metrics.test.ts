@@ -9,7 +9,7 @@ describe('buildSystemMetrics', () => {
       { label: 'Tasks', value: '12 running' },
       { label: 'API', value: '99.9%' },
       { label: 'Tokens', value: '12.4K' },
-      { label: 'Cost today', value: '€2.41' },
+      { label: 'Cost today', value: '$2.41' },
     ])
   })
 
