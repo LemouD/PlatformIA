@@ -4,7 +4,7 @@ import { Bell } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAV_ITEMS, isNavItemActive } from '@/config/navigation'
-import type { SystemHealth } from '@/mocks/session'
+import type { SystemHealth } from '@/domain/types'
 
 const HEALTH_LABEL: Record<SystemHealth, string> = {
   nominal: 'System nominal',
