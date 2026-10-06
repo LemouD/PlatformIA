@@ -29,7 +29,7 @@ export function PanelHeading({ id, eyebrow, title, detail }: PanelHeadingProps) 
     <header className="flex items-end justify-between">
       <div className="flex flex-col gap-[5px]">
         <p className="font-mono text-[9px] font-semibold uppercase text-accent">{eyebrow}</p>
-        <h2 id={id} className="text-lg text-ink">
+        <h2 id={id} className="font-display text-lg italic text-ink">
           {title}
         </h2>
       </div>

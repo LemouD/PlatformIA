@@ -30,7 +30,7 @@ export function TopNav({ health, userInitials }: TopNavProps) {
         <Link href="/" aria-label="AI OS home" className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="flex size-[31px] items-center justify-center rounded-control bg-linear-to-b from-cyan to-accent text-[11px] font-extrabold text-canvas shadow-glow"
+            className="flex size-[31px] items-center justify-center rounded-control bg-linear-to-b from-brass-light to-accent text-[11px] font-extrabold text-canvas shadow-glow"
           >
             AI
           </span>

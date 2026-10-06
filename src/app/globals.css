@@ -1,43 +1,78 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-canvas: #060811;
-  --color-nav: rgb(7 10 19 / 0.91);
-  --color-surface: #0d1120;
-  --color-surface-raised: #151b30;
-  --color-surface-sunken: #090c17;
-  --color-surface-command: #101529;
-  --color-line: #232a42;
-  --color-line-strong: #343d5f;
+  --color-canvas: #12050a;
+  --color-nav: rgb(18 5 10 / 0.88);
+  --color-surface: #1c0811;
+  --color-surface-raised: #2a0d19;
+  --color-surface-sunken: #0c0307;
+  --color-surface-command: #220a15;
+  --color-line: #3a1424;
+  --color-line-strong: #5a2238;
 
-  --color-ink: #f4f6ff;
-  --color-ink-soft: #b5bed7;
-  --color-ink-muted: #69738e;
+  --color-ink: #f2e6d8;
+  --color-ink-soft: #d9c6b3;
+  --color-ink-muted: #a8939a;
 
-  --color-accent: #8274ff;
-  --color-info: #4ea8ff;
-  --color-cyan: #62d7ff;
-  --color-success: #56d6a2;
-  --color-warning: #ffae69;
-  --color-danger: #ff6e7a;
+  --color-accent: #c9a46a;
+  --color-velvet: #3a0c1e;
+  --color-lacquer: #2b0d22;
+  --color-brass-light: #f1d3a1;
 
-  --color-avatar-from: #334b80;
-  --color-avatar-to: #8a6ebc;
+  --color-info: #6fa8ff;
+  --color-amethyst: #b48cff;
+  --color-success: #4fc79a;
+  --color-warning: #e8a54b;
+  --color-danger: #ff5470;
 
-  --radius-control: 10px;
-  --radius-card: 14px;
-  --radius-panel: 20px;
+  --color-avatar-from: #5b2240;
+  --color-avatar-to: #c9a46a;
 
-  --shadow-panel: 0 16px 40px 0 rgb(0 0 0 / 0.31);
-  --shadow-glow: 0 0 26px 0 rgb(130 116 255 / 0.33);
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-panel: 18px;
+
+  --shadow-panel: 0 18px 48px 0 rgb(0 0 0 / 0.5);
+  --shadow-glow: 0 0 28px 0 rgb(241 211 161 / 0.22);
 }
 
 @theme inline {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-info);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+.film-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-image: url('/grain.svg');
+  background-size: 256px 256px;
+  opacity: 0.07;
+}
+
+@media (prefers-contrast: more) {
+  .film-grain {
+    display: none;
+  }
+}
+
+.velvet-folds {
+  background-image: repeating-linear-gradient(
+    90deg,
+    #1c0610 0,
+    var(--color-velvet) 28px,
+    #1c0610 56px
+  );
+  opacity: 0.35;
+}
+
+.velvet-vignette {
+  background-image: radial-gradient(ellipse at center, transparent 40%, rgb(6 1 4 / 0.9) 100%);
 }

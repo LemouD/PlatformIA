@@ -27,7 +27,7 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
       className="flex flex-col gap-3.5 rounded-panel border border-line-strong bg-surface-command p-5 shadow-glow"
     >
       <div className="flex items-center gap-3.5">
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-canvas">
           <Sparkles size={15} />
         </span>
         <label htmlFor={COMMAND_INPUT_ID} className="sr-only">
@@ -41,7 +41,7 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
           maxLength={MAX_COMMAND_LENGTH}
           autoComplete="off"
           placeholder="What should I do?"
-          className="min-w-0 flex-1 bg-transparent text-lg font-medium text-ink outline-none placeholder:text-ink"
+          className="min-w-0 flex-1 bg-transparent font-display text-lg italic text-ink outline-none placeholder:text-ink"
         />
         <button
           type="button"
@@ -54,7 +54,7 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
         <button
           type="submit"
           aria-label="Send command"
-          className="flex size-[35px] shrink-0 items-center justify-center rounded-control bg-accent text-white"
+          className="flex size-[35px] shrink-0 items-center justify-center rounded-control bg-accent text-canvas"
         >
           <ArrowUp aria-hidden size={15} />
         </button>
