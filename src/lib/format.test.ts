@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatClockTime,
   formatCompactNumber,
-  formatEuro,
+  formatUsd,
   formatHeadingDate,
   formatPercent,
 } from './format'
@@ -33,10 +33,10 @@ describe('formatPercent', () => {
   })
 })
 
-describe('formatEuro', () => {
-  it('shows two decimals with the euro sign first', () => {
-    expect(formatEuro(2.41)).toBe('€2.41')
-    expect(formatEuro(3)).toBe('€3.00')
+describe('formatUsd', () => {
+  it('shows two decimals with the dollar sign first', () => {
+    expect(formatUsd(2.41)).toBe('$2.41')
+    expect(formatUsd(3)).toBe('$3.00')
   })
 })
 

@@ -46,8 +46,8 @@ export interface SystemMetrics {
   /** Percentage between 0 and 100. */
   apiUptime: number
   tokens: number
-  /** Euros spent today. */
-  costToday: number
+  /** US dollars spent today, as estimated from the model price list. */
+  costTodayUsd: number
 }
 
 export type SystemHealth = 'nominal' | 'degraded'

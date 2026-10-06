@@ -33,8 +33,8 @@ export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`
 }
 
-export function formatEuro(value: number): string {
-  return `€${value.toFixed(2)}`
+export function formatUsd(value: number): string {
+  return `$${value.toFixed(2)}`
 }
 
 export function formatClockTime(timestamp: number): string {

@@ -1,6 +1,6 @@
 import { countOnlineSpecialists } from '@/domain/selectors'
 import type { CommandCenterSnapshot } from '@/domain/types'
-import { formatCompactNumber, formatEuro, formatPercent } from '@/lib/format'
+import { formatCompactNumber, formatPercent, formatUsd } from '@/lib/format'
 
 export interface MetricItem {
   label: string
@@ -13,6 +13,6 @@ export function buildSystemMetrics(snapshot: CommandCenterSnapshot): MetricItem[
     { label: 'Tasks', value: `${snapshot.metrics.runningTasks} running` },
     { label: 'API', value: formatPercent(snapshot.metrics.apiUptime) },
     { label: 'Tokens', value: formatCompactNumber(snapshot.metrics.tokens) },
-    { label: 'Cost today', value: formatEuro(snapshot.metrics.costToday) },
+    { label: 'Cost today', value: formatUsd(snapshot.metrics.costTodayUsd) },
   ]
 }
