@@ -1,4 +1,4 @@
-export type SystemHealth = 'nominal' | 'degraded'
+import type { SystemHealth } from '@/domain/types'
 
 export interface Session {
   userInitials: string
