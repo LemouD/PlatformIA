@@ -17,4 +17,5 @@ supabase/.temp/
 # Documents locaux
 *.md
 !README.md
+!INSTALL.md
 *.pdf
