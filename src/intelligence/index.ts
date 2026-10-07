@@ -19,3 +19,4 @@ export {
 export { createAnthropicLlmClient } from './llm/anthropic-client'
 export type { EventSink } from './events'
 export { runAgent, type EngineDeps, type EngineSettings, type RunRequest, type RunResult } from './runner/run-agent'
+export { proposeAgent, type ProposeRequest, type ProposeResult, type CreatorRound } from './creator/propose'
