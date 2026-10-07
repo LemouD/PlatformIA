@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { MobileTabBar } from '@/components/layout/MobileTabBar'
 import { TopNav } from '@/components/layout/TopNav'
 import { mockSession } from '@/mocks/session'
+import { SystemProvider } from '@/store/SystemProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${inter.variable} ${plexMono.variable} ${bodoni.variable}`}>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
         <TopNav health={mockSession.health} userInitials={mockSession.userInitials} />
-        <main className="pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+        <main className="pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
+          <SystemProvider>{children}</SystemProvider>
+        </main>
         <MobileTabBar userInitials={mockSession.userInitials} />
         <div aria-hidden className="film-grain" />
       </body>

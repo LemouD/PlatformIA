@@ -83,7 +83,7 @@ export function PendingApprovals({ approvals, agents, onDecide }: PendingApprova
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <p className="font-mono text-[10px] uppercase text-warning">
-                {agent?.name ?? 'An agent'} Â· approval needed
+                {agent?.name ?? 'An agent'} · approval needed
               </p>
               <p className="text-sm text-ink">{approval.summary}</p>
               <button
@@ -150,7 +150,7 @@ export function PendingApprovals({ approvals, agents, onDecide }: PendingApprova
                 dateTime={new Date(selected.requestedAt).toISOString()}
                 className="font-mono text-[11px] text-ink-muted"
               >
-                {selectedAgent?.name ?? 'An agent'} Â· requested at {formatClockTime(selected.requestedAt)}
+                {selectedAgent?.name ?? 'An agent'} · requested at {formatClockTime(selected.requestedAt)}
               </time>
               <h2 id="approval-title" className="font-display text-2xl italic">
                 {selected.summary}
