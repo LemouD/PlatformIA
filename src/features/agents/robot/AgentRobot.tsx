@@ -18,6 +18,8 @@ export interface AgentRobotProps {
   progress?: number
   /** Orbit scale, applied to world robots only. */
   scale?: number
+  /** Explicit height in px, e.g. the 50 px miniature of the phone agent list. */
+  size?: number
 }
 
 const STATE_VAR = 'var(--agent-state)'
@@ -55,12 +57,13 @@ export function AgentRobot({
   moving,
   progress,
   scale = 1,
+  size,
 }: AgentRobotProps) {
   const reduced = useReducedMotion() ?? false
   const live = variant === 'world' && !reduced
   const rhythm = STATE_MOTION[status]
   const prop = resolveRobotProp(role, environment)
-  const height = robotHeight(variant, role, scale)
+  const height = size ?? robotHeight(variant, role, scale)
   const width = (height * ROBOT_VIEWBOX.width) / ROBOT_VIEWBOX.height
 
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')

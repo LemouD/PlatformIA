@@ -11,6 +11,11 @@ const HEALTH_LABEL: Record<SystemHealth, string> = {
   degraded: 'System degraded',
 }
 
+const HEALTH_SHORT: Record<SystemHealth, string> = {
+  nominal: 'OK',
+  degraded: 'Degraded',
+}
+
 const HEALTH_DOT: Record<SystemHealth, string> = {
   nominal: 'bg-success',
   degraded: 'bg-warning',
@@ -21,65 +26,101 @@ interface TopNavProps {
   userInitials: string
 }
 
+function Brand() {
+  return (
+    <Link href="/" aria-label="AI OS home" className="flex items-center gap-2.5">
+      <span
+        aria-hidden
+        className="flex size-[31px] items-center justify-center rounded-control bg-linear-to-b from-brass-light to-accent text-[11px] font-extrabold text-canvas shadow-glow"
+      >
+        AI
+      </span>
+      <span className="text-base font-bold text-ink">AI OS</span>
+    </Link>
+  )
+}
+
+function Avatar({ initials }: { initials: string }) {
+  return (
+    <span
+      role="img"
+      aria-label="Account"
+      className="flex size-[34px] items-center justify-center rounded-full bg-linear-to-b from-avatar-from to-avatar-to text-[10px] font-bold text-white"
+    >
+      {initials}
+    </span>
+  )
+}
+
 export function TopNav({ health, userInitials }: TopNavProps) {
   const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-40 flex h-[72px] items-center justify-between border-b border-line bg-nav px-9 backdrop-blur">
-      <div className="flex items-center gap-[34px]">
-        <Link href="/" aria-label="AI OS home" className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="flex size-[31px] items-center justify-center rounded-control bg-linear-to-b from-brass-light to-accent text-[11px] font-extrabold text-canvas shadow-glow"
-          >
-            AI
-          </span>
-          <span className="text-base font-bold text-ink">AI OS</span>
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-line bg-nav backdrop-blur">
+      {/* Desktop and tablet */}
+      <div className="hidden h-[72px] items-center justify-between px-9 md:flex">
+        <div className="flex items-center gap-[34px]">
+          <Brand />
+          <nav aria-label="Primary">
+            <ul className="flex items-center gap-1">
+              {NAV_ITEMS.map((item) => {
+                const active = isNavItemActive(pathname, item.href)
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={`block rounded-control px-[11px] py-2 text-[11px] transition-colors ${
+                        active
+                          ? 'bg-surface-raised font-semibold text-ink'
+                          : 'text-ink-muted hover:text-ink-soft'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        </div>
 
-        <nav aria-label="Primary">
-          <ul className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = isNavItemActive(pathname, item.href)
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={`block rounded-control px-[11px] py-2 text-[11px] transition-colors ${
-                      active
-                        ? 'bg-surface-raised font-semibold text-ink'
-                        : 'text-ink-muted hover:text-ink-soft'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+        <div className="flex items-center gap-[11px]">
+          <p className="flex items-center gap-[7px] rounded-full bg-surface px-2.5 py-[7px] font-mono text-[9px] font-semibold uppercase text-ink-soft">
+            <span aria-hidden className={`size-1.5 rounded-full ${HEALTH_DOT[health]}`} />
+            {HEALTH_LABEL[health]}
+          </p>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="flex size-[34px] items-center justify-center rounded-control bg-surface text-ink-soft"
+          >
+            <Bell aria-hidden size={14} />
+          </button>
+          <Avatar initials={userInitials} />
+        </div>
       </div>
 
-      <div className="flex items-center gap-[11px]">
-        <p className="flex items-center gap-[7px] rounded-full bg-surface px-2.5 py-[7px] font-mono text-[9px] font-semibold uppercase text-ink-soft">
-          <span aria-hidden className={`size-1.5 rounded-full ${HEALTH_DOT[health]}`} />
-          {HEALTH_LABEL[health]}
-        </p>
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex size-[34px] items-center justify-center rounded-control bg-surface text-ink-soft"
-        >
-          <Bell aria-hidden size={14} />
-        </button>
-        <span
-          role="img"
-          aria-label="Account"
-          className="flex size-[34px] items-center justify-center rounded-full bg-linear-to-b from-avatar-from to-avatar-to text-[10px] font-bold text-white"
-        >
-          {userInitials}
-        </span>
+      {/* Phone: the sections move to the bottom tab bar */}
+      <div className="flex h-14 items-center justify-between px-4 md:hidden">
+        <Brand />
+        <div className="flex items-center gap-2">
+          <p
+            className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase text-ink-soft"
+            aria-label={HEALTH_LABEL[health]}
+          >
+            <span aria-hidden className={`size-1.5 rounded-full ${HEALTH_DOT[health]}`} />
+            {HEALTH_SHORT[health]}
+          </p>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="flex size-11 items-center justify-center rounded-control bg-surface text-ink-soft"
+          >
+            <Bell aria-hidden size={18} />
+          </button>
+          <Avatar initials={userInitials} />
+        </div>
       </div>
     </header>
   )

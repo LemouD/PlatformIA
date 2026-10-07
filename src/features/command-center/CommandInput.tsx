@@ -24,10 +24,10 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3.5 rounded-panel border border-line-strong bg-surface-command p-5 shadow-glow"
+      className="flex flex-col gap-3.5 rounded-panel border border-line-strong bg-surface-command p-4 shadow-glow md:p-5"
     >
-      <div className="flex items-center gap-3.5">
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-canvas">
+      <div className="flex items-center gap-2 md:gap-3.5">
+        <span aria-hidden className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-accent text-canvas md:flex">
           <Sparkles size={15} />
         </span>
         <label htmlFor={COMMAND_INPUT_ID} className="sr-only">
@@ -41,32 +41,35 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
           maxLength={MAX_COMMAND_LENGTH}
           autoComplete="off"
           placeholder="What should I do?"
-          className="min-w-0 flex-1 bg-transparent font-display text-lg italic text-ink outline-none placeholder:text-ink"
+          className="h-12 min-w-0 flex-1 rounded-control border border-line-control bg-surface-sunken px-3 font-display text-lg italic text-ink outline-none placeholder:text-ink md:h-auto md:rounded-none md:border-0 md:bg-transparent md:px-0"
         />
         <button
           type="button"
           disabled
           aria-label="Voice input (unavailable)"
-          className="flex size-[35px] shrink-0 items-center justify-center rounded-control bg-surface-raised text-ink-soft disabled:opacity-50"
+          className="flex size-12 shrink-0 items-center justify-center rounded-control bg-surface-raised text-ink-soft disabled:opacity-50 md:size-[35px]"
         >
           <Mic aria-hidden size={15} />
         </button>
         <button
           type="submit"
           aria-label="Send command"
-          className="flex size-[35px] shrink-0 items-center justify-center rounded-control bg-accent text-canvas"
+          className="flex size-12 shrink-0 items-center justify-center rounded-control bg-accent text-canvas md:size-[35px]"
         >
           <ArrowUp aria-hidden size={15} />
         </button>
       </div>
 
-      <ul aria-label="Suggestions" className="flex flex-wrap gap-2">
+      <ul
+        aria-label="Suggestions"
+        className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+      >
         {suggestions.map((suggestion) => (
-          <li key={suggestion} className="min-w-[160px] flex-1">
+          <li key={suggestion} className="flex-none md:min-w-[160px] md:flex-1">
             <button
               type="button"
               onClick={() => setValue(suggestion.replace(/\.\.\.$/, ''))}
-              className="w-full truncate rounded-control border border-line-control bg-surface-sunken px-2.5 py-2 text-left text-[9px] text-ink-muted hover:text-ink-soft"
+              className="h-10 w-full truncate whitespace-nowrap rounded-control border border-line-control bg-surface-sunken px-3 text-left text-xs text-ink-muted hover:text-ink-soft md:h-auto md:px-2.5 md:py-2 md:text-[9px]"
             >
               {suggestion}
             </button>
