@@ -13,13 +13,15 @@ import { buildSystemMetrics } from './system-metrics'
 
 interface CommandCenterProps {
   snapshot: CommandCenterSnapshot
+  onCommand?: (command: string) => void
+  onDecide?: (approvalId: string, decision: 'approved' | 'rejected') => void
 }
 
 /**
  * One tree for both layouts. Below 768 px the wrappers become `display: contents`
  * and `order` puts the command field first, then agents, handoff, activity and status.
  */
-export function CommandCenter({ snapshot }: CommandCenterProps) {
+export function CommandCenter({ snapshot, onCommand, onDecide }: CommandCenterProps) {
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 pt-4 pb-6 md:gap-[22px] md:px-9 md:pt-[30px] md:pb-[34px]">
       <div className="max-md:hidden">
@@ -54,11 +56,11 @@ export function CommandCenter({ snapshot }: CommandCenterProps) {
       </div>
 
       <div className="max-md:order-1">
-        <CommandInput suggestions={snapshot.suggestions} />
+        <CommandInput suggestions={snapshot.suggestions} onSubmit={onCommand} />
       </div>
 
       <div className="max-md:order-1 md:hidden">
-        <PendingApprovals approvals={snapshot.approvals} agents={snapshot.agents} />
+        <PendingApprovals approvals={snapshot.approvals} agents={snapshot.agents} onDecide={onDecide} />
       </div>
     </div>
   )

@@ -128,6 +128,12 @@ export type AgentEvent = EventBase &
 
 export type AgentEventType = AgentEvent['type']
 
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
+
+/** An event before the source stamps its id and time, e.g. a step of a scripted scenario. */
+export type AgentEventInput = DistributiveOmit<AgentEvent, 'id' | 'at'>
+
+
 export type AgentEventOf<T extends AgentEventType> = Extract<AgentEvent, { type: T }>
 
 export const AGENT_EVENT_TYPES = [
