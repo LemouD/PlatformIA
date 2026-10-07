@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Bodoni_Moda, IBM_Plex_Mono, Inter } from 'next/font/google'
 import type { ReactNode } from 'react'
+import { MobileTabBar } from '@/components/layout/MobileTabBar'
 import { TopNav } from '@/components/layout/TopNav'
 import { mockSession } from '@/mocks/session'
 import './globals.css'
@@ -23,12 +24,20 @@ export const metadata: Metadata = {
   description: 'Personal AI command center',
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#12050a',
+}
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${plexMono.variable} ${bodoni.variable}`}>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
         <TopNav health={mockSession.health} userInitials={mockSession.userInitials} />
-        <main>{children}</main>
+        <main className="pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+        <MobileTabBar userInitials={mockSession.userInitials} />
         <div aria-hidden className="film-grain" />
       </body>
     </html>

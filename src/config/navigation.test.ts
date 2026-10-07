@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NAV_ITEMS, isNavItemActive } from './navigation'
+import { isMoreActive, isNavItemActive, MOBILE_TABS, MORE_ITEMS, NAV_ITEMS } from './navigation'
 
 describe('NAV_ITEMS', () => {
   it('lists the seven sections in mockup order', () => {
@@ -33,5 +33,19 @@ describe('isNavItemActive', () => {
 
   it('does not match a section that only shares a prefix', () => {
     expect(isNavItemActive('/tasks-archive', '/tasks')).toBe(false)
+  })
+})
+
+describe('phone navigation', () => {
+  it('splits every section between the tab bar and the More sheet', () => {
+    const phoneHrefs = [...MOBILE_TABS, ...MORE_ITEMS].map((item) => item.href).sort()
+    expect(phoneHrefs).toEqual(NAV_ITEMS.map((item) => item.href).sort())
+  })
+
+  it('highlights More only for the sections it holds', () => {
+    expect(isMoreActive('/memory')).toBe(true)
+    expect(isMoreActive('/tools/web')).toBe(true)
+    expect(isMoreActive('/agents')).toBe(false)
+    expect(isMoreActive('/')).toBe(false)
   })
 })
