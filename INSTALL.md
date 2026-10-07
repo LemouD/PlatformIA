@@ -39,7 +39,7 @@ npm run dev
 
 Ouvrez http://localhost:3000. Les modifications du code s'affichent sans redémarrer.
 
-Le mode développement est réservé au développement : il expose le code source et des points d'accès internes. Ne l'ouvrez jamais au réseau.
+Le mode développement est réservé au développement : il expose le code source et des points d'accès internes. Il écoute uniquement sur la machine elle-même (`127.0.0.1`) ; ne l'ouvrez jamais au réseau.
 
 ## 5. Commandes utiles
 
@@ -62,10 +62,10 @@ npm run build
 ```
 
 ```bash
-npm run start -- -H 127.0.0.1
+npm run start
 ```
 
-L'option `-H 127.0.0.1` est indispensable. Sans elle, `next start` écoute sur toutes les interfaces réseau : n'importe quel appareil du réseau local pourrait joindre l'application, alors qu'elle n'a pas encore d'authentification. Pour accéder à AI OS depuis un autre appareil, passez par Tailscale (section 8), jamais par une écoute réseau.
+Les scripts `dev` et `start` écoutent uniquement sur la machine elle-même (`-H 127.0.0.1`). Ne retirez pas cette option et ne la remplacez pas par `0.0.0.0` : n'importe quel appareil du réseau local, ou de votre réseau Tailscale, pourrait alors joindre l'application, qui n'a pas encore d'authentification. Pour accéder à AI OS depuis un autre appareil, passez par `tailscale serve` (section 8), jamais par une écoute réseau.
 
 ## 7. Dépannage
 
