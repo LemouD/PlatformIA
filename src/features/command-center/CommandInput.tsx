@@ -66,7 +66,7 @@ export function CommandInput({ suggestions, onSubmit }: CommandInputProps) {
             <button
               type="button"
               onClick={() => setValue(suggestion.replace(/\.\.\.$/, ''))}
-              className="w-full truncate rounded-control border border-line bg-surface-sunken px-2.5 py-2 text-left text-[9px] text-ink-muted hover:text-ink-soft"
+              className="w-full truncate rounded-control border border-line-control bg-surface-sunken px-2.5 py-2 text-left text-[9px] text-ink-muted hover:text-ink-soft"
             >
               {suggestion}
             </button>
