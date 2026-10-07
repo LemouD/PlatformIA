@@ -1,3 +1,5 @@
+import type { Approval } from './events'
+
 export const AGENT_STATUSES = [
   'IDLE',
   'WORKING',
@@ -62,4 +64,6 @@ export interface CommandCenterSnapshot {
   /** Agent ids, in the order information is flowing. Empty when no handoff is active. */
   handoffChain: string[]
   suggestions: string[]
+  /** Requests waiting for the user's decision. */
+  approvals: Approval[]
 }
