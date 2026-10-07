@@ -1,5 +1,6 @@
 import { formatHandoffChain } from '@/domain/selectors'
 import type { CommandCenterSnapshot } from '@/domain/types'
+import { PendingApprovals } from '@/features/approvals/PendingApprovals'
 import { AgentList } from './AgentList'
 import { AgentStates } from './AgentStates'
 import { CommandInput } from './CommandInput'
@@ -54,6 +55,10 @@ export function CommandCenter({ snapshot }: CommandCenterProps) {
 
       <div className="max-md:order-1">
         <CommandInput suggestions={snapshot.suggestions} />
+      </div>
+
+      <div className="max-md:order-1 md:hidden">
+        <PendingApprovals approvals={snapshot.approvals} agents={snapshot.agents} />
       </div>
     </div>
   )

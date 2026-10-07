@@ -30,4 +30,18 @@ export const mockSnapshot: CommandCenterSnapshot = {
     'Turn off the lights...',
     'Create a new agent...',
   ],
+  approvals: [
+    {
+      id: 'approval-1',
+      agentId: 'personal',
+      executionId: null,
+      summary: 'Send the weekly family menu to the shared calendar',
+      requestedAt: at(16, 41, 58),
+      action: 'Create 7 calendar events',
+      dataUsed: 'Weekly menu drafted by Personal Agent',
+      leavesAiOs: true,
+      preview:
+        'Mon: lentil soup\nTue: chicken yassa\nWed: vegetable gratin\nThu: thieboudienne\nFri: pizza night\nSat: grilled fish\nSun: family brunch',
+    },
+  ],
 }

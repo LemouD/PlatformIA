@@ -74,6 +74,14 @@ export interface Approval {
   /** What the user is asked to approve. Plain text. */
   summary: string
   requestedAt: number
+  /** What the agent will do if approved, e.g. "Send one email". Plain text. */
+  action?: string
+  /** Data the action reads or sends, e.g. "Draft from Personal Agent". Plain text. */
+  dataUsed?: string
+  /** True when approving makes something leave AI OS (email, message, upload). */
+  leavesAiOs?: boolean
+  /** Content the user is about to approve, shown verbatim as plain text. */
+  preview?: string
 }
 
 interface EventBase {
