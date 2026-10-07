@@ -14,7 +14,7 @@ export interface Zone {
  * Where the robot's feet may go, in the 270 × 190 territory frame: the front part of the
  * floor, clear of the scene objects at the back and of the heading.
  */
-export const WALK_ZONE: Zone = { cx: 135, cy: 146, rx: 92, ry: 16 }
+export const WALK_ZONE: Zone = { cx: 135, cy: 158, rx: 92, ry: 16 }
 
 /** Pixels per second, in map units. */
 export const WALK_SPEED = 18

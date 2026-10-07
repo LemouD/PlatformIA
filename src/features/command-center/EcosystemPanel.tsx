@@ -1,6 +1,7 @@
 import { Panel, PanelHeading } from '@/components/ui/Panel'
 import { listSpecialists } from '@/domain/selectors'
 import type { Agent } from '@/domain/types'
+import { EcosystemMap } from '@/features/ecosystem/EcosystemMap'
 import { formatClockTime } from '@/lib/format'
 
 interface EcosystemPanelProps {
@@ -19,7 +20,7 @@ export function EcosystemPanel({ agents, syncedAt }: EcosystemPanelProps) {
         title="Your agents are collaborating"
         detail={`Sync ${formatClockTime(syncedAt)}`}
       />
-      <div className="relative min-h-[560px]" />
+      <EcosystemMap agents={agents} />
     </Panel>
   )
 }

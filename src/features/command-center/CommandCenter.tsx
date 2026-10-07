@@ -18,7 +18,7 @@ export function CommandCenter({ snapshot }: CommandCenterProps) {
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-[22px] px-9 pt-[30px] pb-[34px]">
       <PageHeading />
 
-      <div className="grid gap-[18px] xl:grid-cols-[minmax(0,880fr)_minmax(0,450fr)]">
+      <div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,880fr)_minmax(0,450fr)]">
         <EcosystemPanel agents={snapshot.agents} syncedAt={snapshot.syncedAt} />
         <div className="flex flex-col gap-3.5">
           <LiveActivity entries={snapshot.activity} />

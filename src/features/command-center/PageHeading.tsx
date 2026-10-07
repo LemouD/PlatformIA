@@ -7,7 +7,7 @@ import { LiveClock } from './LiveClock'
 
 const ACTION_BASE =
   'flex h-[42px] items-center gap-[9px] rounded-control border px-[15px] text-[11px] font-semibold'
-const ACTION_SECONDARY = `${ACTION_BASE} border-line bg-surface text-ink-soft`
+const ACTION_SECONDARY = `${ACTION_BASE} border-line-control bg-surface text-ink-soft`
 const ACTION_PRIMARY = `${ACTION_BASE} border-accent bg-accent text-canvas`
 
 function focusCommandInput() {

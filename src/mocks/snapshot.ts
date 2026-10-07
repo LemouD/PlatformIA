@@ -23,7 +23,7 @@ export const mockSnapshot: CommandCenterSnapshot = {
   health: 'nominal',
   syncedAt: at(16, 42, 42),
   objective: 'Compile the latest platform research into an implementation brief',
-  handoffChain: ['research', 'nova', 'coding'],
+  handoffChain: ['nova', 'coding'],
   suggestions: [
     'Research the latest Power Platform news...',
     'Analyze my documents...',
