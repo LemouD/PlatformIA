@@ -1,8 +1,30 @@
-import type { AgentEvent, Approval } from '@/domain/events'
+import type { AgentEvent, AgentEventInput, Approval } from '@/domain/events'
 import { commandScenario, decisionScenario } from '@/mocks/scenarios'
 import type { ScenarioStep } from '@/mocks/scenarios'
 import type { Scheduler } from '@/store/scheduler'
 import type { AgentEventSource, ApprovalDecision } from './source'
+
+/** Scenarios are written without times; the source dates each payload when it emits it. */
+export function stampTimes(event: AgentEventInput, at: number): AgentEventInput {
+  switch (event.type) {
+    case 'task.created':
+      return { ...event, task: { ...event.task, createdAt: at, startedAt: at } }
+    case 'task.updated':
+      return event
+    case 'execution.started':
+      return { ...event, execution: { ...event.execution, startedAt: at } }
+    case 'execution.step':
+      return { ...event, step: { ...event.step, timestamp: at } }
+    case 'log.appended':
+      return { ...event, log: { ...event.log, timestamp: at } }
+    case 'handoff.started':
+      return { ...event, handoff: { ...event.handoff, startedAt: at } }
+    case 'approval.requested':
+      return { ...event, approval: { ...event.approval, requestedAt: at } }
+    default:
+      return event
+  }
+}
 
 /**
  * Plays scripted scenarios as if a server were sending them. Each step is stamped
@@ -33,7 +55,7 @@ export function createMockEventSource(
       const handle = scheduler.setTimeout(() => {
         timers.delete(handle)
         const at = scheduler.now()
-        emit({ ...step.event, id: nextId('mock-evt'), at } as AgentEvent)
+        emit({ ...stampTimes(step.event, at), id: nextId('mock-evt'), at } as AgentEvent)
       }, delay)
       timers.add(handle)
     }
