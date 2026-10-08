@@ -39,6 +39,11 @@ describe('validateDraft', () => {
     const fields = [{ key: 'diet', label: 'Régime', type: 'choice' as const, required: true }]
     expect(errorsOf(menuDraft({ inputFields: fields, testInput: {} }))).toContain('inputFields.diet: choices manquant')
   })
+  it('rejects invisible characters in a test input value', () => {
+    expect(errorsOf(menuDraft({ testInput: { ingredients: 'riz​', people: '4' } }))).toContain(
+      'testInput.ingredients: caractères invisibles interdits',
+    )
+  })
   it('rejects test input keys that match no field', () => {
     expect(errorsOf(menuDraft({ testInput: { unknown: 'x' } }))).toContain('testInput: clé inconnue « unknown »')
   })

@@ -15,6 +15,7 @@ export const CEILINGS = {
   attachmentsPerRun: 3,
   pdfMaxPages: 20,
   commandMaxChars: 2000,
+  creatorTextMaxChars: 4000,
   llmTimeoutMs: 120_000,
 } as const
 

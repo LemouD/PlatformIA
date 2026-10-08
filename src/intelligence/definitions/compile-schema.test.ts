@@ -21,6 +21,9 @@ describe('compileOutputSchema', () => {
     ['a remote $ref', { type: 'object', additionalProperties: false, required: ['a'], properties: { a: { $ref: 'https://evil.example/s.json' } } }],
     ['a $data reference', { type: 'object', additionalProperties: false, required: ['a'], properties: { a: { const: { $data: '1/b' } } } }],
     ['an excessive depth', nested(12)],
+    ['an empty anyOf', { type: 'object', additionalProperties: false, required: ['a'], properties: { a: { anyOf: [] } } }],
+    ['an empty enum', { type: 'object', additionalProperties: false, required: ['a'], properties: { a: { enum: [] } } }],
+    ['a schema ajv cannot compile', { type: 'object', additionalProperties: false, required: ['a'], properties: { a: { type: 'string', items: { type: 'string' } } } }],
   ])('refuses %s before compilation', (_label, schema) => {
     expect(compileOutputSchema(schema)).toBeNull()
   })

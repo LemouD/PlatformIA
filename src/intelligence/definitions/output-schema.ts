@@ -52,8 +52,11 @@ function walk(node: unknown, path: string, depth: number, errors: string[]): voi
     errors.push(`${path}: type invalide`)
   }
   if ('const' in node && !isPrimitive(node.const)) errors.push(`${path}: const doit être une valeur simple`)
-  if ('enum' in node && !(Array.isArray(node.enum) && node.enum.every(isPrimitive))) {
-    errors.push(`${path}: enum doit être une liste de valeurs simples`)
+  if ('enum' in node && !(Array.isArray(node.enum) && node.enum.length > 0 && node.enum.every(isPrimitive))) {
+    errors.push(`${path}: enum doit être une liste non vide de valeurs simples`)
+  }
+  if ('anyOf' in node && !(Array.isArray(node.anyOf) && node.anyOf.length > 0)) {
+    errors.push(`${path}: anyOf doit être une liste non vide`)
   }
   if (node.type === 'object') {
     if (node.additionalProperties !== false) errors.push(`${path}: additionalProperties doit valoir false`)

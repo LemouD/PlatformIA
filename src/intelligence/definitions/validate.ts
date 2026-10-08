@@ -62,8 +62,10 @@ export function validateDraft(input: unknown): DraftValidation {
     if (field.type === 'choice' && !field.choices) errors.push(`inputFields.${field.key}: choices manquant`)
     if (field.type !== 'choice' && field.choices) errors.push(`inputFields.${field.key}: choices réservé aux champs choice`)
   }
-  for (const key of Object.keys(draft.testInput)) {
+  for (const [key, value] of Object.entries(draft.testInput)) {
     if (!keys.has(key)) errors.push(`testInput: clé inconnue « ${key} »`)
+    if (value.length > CEILINGS.fieldMaxLength) errors.push(`testInput.${key}: trop long`)
+    if (hasInvisible(value)) errors.push(`testInput.${key}: caractères invisibles interdits`)
   }
 
   const texts: [string, string][] = [

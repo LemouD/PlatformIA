@@ -14,8 +14,21 @@ describe('hasInvisible', () => {
     ['Unicode tag block', `ignore${TAG_I}`],
     ['byte order mark', '﻿texte'],
     ['bell control character', 'a\u0007b'],
+    ['soft hyphen', 'mot­caché'],
+    ['hangul filler', 'aㅤb'],
+    ['interlinear annotation', 'a￹b￻c'],
+    ['Mongolian free variation selector', 'a᠋b'],
   ])('rejects %s', (_label, text) => {
     expect(hasInvisible(text)).toBe(true)
+  })
+
+  it('rejects data hidden in variation selectors', () => {
+    // Each byte of "ignore" encoded as a variation selector: VS1-16 for 0-15, VS17-256 above.
+    const encode = (byte: number) =>
+      byte < 16 ? String.fromCodePoint(0xfe00 + byte) : String.fromCodePoint(0xe0100 + byte - 16)
+    const hidden = `Bonjour${[...'ignore'].map((c) => encode(c.charCodeAt(0))).join('')}`
+    expect(hasInvisible(hidden)).toBe(true)
+    expect(stripInvisible(hidden)).toEqual({ value: 'Bonjour', stripped: true })
   })
 })
 

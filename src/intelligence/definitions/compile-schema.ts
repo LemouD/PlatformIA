@@ -18,7 +18,11 @@ export function compileOutputSchema(schema: unknown): ValidateFunction | null {
   const key = JSON.stringify(schema)
   let validate = cache.get(key)
   if (!validate) {
-    validate = ajv.compile(schema as JsonSchema)
+    try {
+      validate = ajv.compile(schema as JsonSchema)
+    } catch {
+      return null
+    }
     if (cache.size >= CACHE_MAX) cache.clear()
     cache.set(key, validate)
   }
