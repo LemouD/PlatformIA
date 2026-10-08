@@ -91,8 +91,12 @@ export class MemoryAuditLog implements AuditLog {
   }
 }
 
+// No constructor parameter properties in this file: the terminal launcher runs it with Node's type stripping.
 export class FakeClock implements Clock {
-  constructor(private current: number = Date.UTC(2026, 9, 6, 10, 0, 0)) {}
+  private current: number
+  constructor(current: number = Date.UTC(2026, 9, 6, 10, 0, 0)) {
+    this.current = current
+  }
   now(): number {
     return this.current
   }
@@ -104,7 +108,10 @@ export class FakeClock implements Clock {
 /** Returns queued results in order and records every request it receives. */
 export class FakeLlmClient implements LlmClient {
   readonly requests: LlmRequest[] = []
-  constructor(private readonly queue: LlmResult[] = []) {}
+  private readonly queue: LlmResult[]
+  constructor(queue: LlmResult[] = []) {
+    this.queue = queue
+  }
 
   push(...results: LlmResult[]): void {
     this.queue.push(...results)

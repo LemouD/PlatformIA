@@ -19,3 +19,6 @@ supabase/.temp/
 !README.md
 !INSTALL.md
 *.pdf
+
+# Outputs of the terminal agent launcher
+sorties/
