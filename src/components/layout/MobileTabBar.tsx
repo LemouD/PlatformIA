@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef } from 'react'
 import { isMoreActive, isNavItemActive, MOBILE_TABS, MORE_ITEMS } from '@/config/navigation'
+import type { Theme } from '@/config/theme'
+import { ThemeSwitcher } from './ThemeSwitcher'
 
 const TAB_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard,
@@ -26,10 +28,11 @@ const TAB_IDLE = 'text-ink-muted'
 
 interface MobileTabBarProps {
   userInitials: string
+  theme: Theme
 }
 
 /** Bottom tab bar shown below 768 px, with a "More" sheet for the remaining sections. */
-export function MobileTabBar({ userInitials }: MobileTabBarProps) {
+export function MobileTabBar({ userInitials, theme }: MobileTabBarProps) {
   const pathname = usePathname()
   const sheet = useRef<HTMLDialogElement>(null)
   const moreActive = isMoreActive(pathname)
@@ -116,7 +119,11 @@ export function MobileTabBar({ userInitials }: MobileTabBarProps) {
                 </li>
               )
             })}
-            <li className="mt-2 flex h-12 items-center gap-3 border-t border-line px-3 pt-2 text-sm text-ink-muted">
+            <li className="mt-2 flex flex-col gap-2 border-t border-line px-1 pt-3">
+              <span className="font-mono text-[11px] uppercase text-ink-muted">Appearance</span>
+              <ThemeSwitcher initialTheme={theme} size="touch" />
+            </li>
+            <li className="flex h-12 items-center gap-3 px-3 text-sm text-ink-muted">
               <span
                 aria-hidden
                 className="flex size-7 items-center justify-center rounded-full bg-linear-to-b from-avatar-from to-avatar-to text-[10px] font-bold text-white"

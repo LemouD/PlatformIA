@@ -145,9 +145,9 @@ export function AgentRobot({
           <stop offset="1" style={{ stopColor: STATE_VAR }} stopOpacity="0" />
         </radialGradient>
         <linearGradient id={gid('screen-lacquer')} x1="0" y1="0" x2=".25" y2="1">
-          <stop offset="0" stopColor="#5B2A50" />
-          <stop offset=".55" stopColor="#3A1530" />
-          <stop offset="1" stopColor="#1E0918" />
+          <stop offset="0" style={{ stopColor: 'var(--color-lacquer-light)' }} />
+          <stop offset=".55" style={{ stopColor: 'var(--color-lacquer)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--color-screen)' }} />
         </linearGradient>
         <radialGradient id={gid('antenna-glow')} cx=".5" cy=".5" r=".5">
           <stop offset="0" stopColor="#FFF4DC" />
@@ -334,7 +334,7 @@ export function AgentRobot({
                 width="60"
                 height="36"
                 rx="11"
-                fill="#0B0307"
+                style={{ fill: 'var(--color-screen)' }}
                 stroke={BRASS}
                 strokeOpacity=".35"
                 initial={false}
@@ -437,7 +437,7 @@ export function AgentRobot({
               </motion.g>
 
               <g data-part="status-bar">
-                <rect x="98" y="95" width="44" height="4" rx="2" fill="#0B0307" />
+                <rect x="98" y="95" width="44" height="4" rx="2" style={{ fill: 'var(--color-screen)' }} />
                 <motion.rect
                   data-part="status-bar-fill"
                   x="98"
