@@ -45,8 +45,8 @@ export function AgentEnvironment({ environment, status, showScene, className }: 
           <stop offset="1" style={{ stopColor: STATE_VAR }} stopOpacity="0" />
         </radialGradient>
         <radialGradient id={gid('floor')} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#3A0C1E" />
-          <stop offset="1" stopColor="#1C0811" stopOpacity="0" />
+          <stop offset="0" style={{ stopColor: 'var(--color-velvet)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--color-surface)' }} stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -63,7 +63,7 @@ export function AgentEnvironment({ environment, status, showScene, className }: 
           <path d="M60 50 L60 92 M50 92 L70 92" stroke={BRASS} strokeWidth="2.5" strokeLinecap="round" />
           <rect x="120" y="78" width="40" height="7" rx="1" fill="#5B2240" />
           <rect x="124" y="71" width="34" height="7" rx="1" fill="#2B0D22" stroke={BRASS} strokeOpacity=".4" />
-          <rect x="118" y="85" width="44" height="8" rx="1" fill="#3A0C1E" />
+          <rect x="118" y="85" width="44" height="8" rx="1" style={{ fill: 'var(--color-velvet)' }} />
           <path d="M150 71 L150 48" stroke={BRASS} strokeWidth="2" />
           <path d="M140 52 L160 52 L156 42 L144 42Z" fill="#2B0D22" stroke={fill('brass')} />
           <circle cx="150" cy="55" r="9" fill={fill('glow')} />
@@ -94,14 +94,14 @@ export function AgentEnvironment({ environment, status, showScene, className }: 
         <g data-part="env-home">
           <rect x="40" y="10" width="34" height="88" rx="4" fill={fill('wood')} stroke={fill('brass')} strokeWidth="1.5" />
           <path d="M40 18 Q57 0 74 18" fill="#2B0D22" stroke={fill('brass')} strokeWidth="1.5" />
-          <circle cx="57" cy="30" r="11" fill="#0B0307" stroke={fill('brass')} strokeWidth="2" />
+          <circle cx="57" cy="30" r="11" style={{ fill: 'var(--color-screen)' }} stroke={fill('brass')} strokeWidth="2" />
           <circle cx="57" cy="30" r="9" fill={fill('glow')} opacity=".6" />
           <path d="M57 30 L57 23 M57 30 L62 32" stroke="#F2E6D8" strokeWidth="1.5" strokeLinecap="round" />
-          <rect x="48" y="48" width="18" height="40" rx="2" fill="#0B0307" stroke={BRASS} strokeOpacity=".3" />
+          <rect x="48" y="48" width="18" height="40" rx="2" style={{ fill: 'var(--color-screen)' }} stroke={BRASS} strokeOpacity=".3" />
           <path d="M57 50 L57 78" stroke={BRASS} />
           <circle cx="57" cy="80" r="4" fill={fill('brass')} />
           <path d="M150 98 L150 34 M140 98 L160 98" stroke={BRASS} strokeWidth="2" strokeLinecap="round" />
-          <path d="M136 36 L164 36 L158 18 L142 18Z" fill="#3A0C1E" stroke={fill('brass')} />
+          <path d="M136 36 L164 36 L158 18 L142 18Z" style={{ fill: 'var(--color-velvet)' }} stroke={fill('brass')} />
           <circle cx="150" cy="40" r="11" fill={fill('glow')} />
         </g>
       ) : null}
@@ -110,7 +110,7 @@ export function AgentEnvironment({ environment, status, showScene, className }: 
         <g data-part="env-personal">
           <rect x="44" y="64" width="112" height="9" rx="2" fill={fill('wood')} stroke={BRASS} strokeOpacity=".35" />
           <path d="M54 73 Q50 86 56 98 M146 73 Q150 86 144 98" stroke="#4A1A2C" strokeWidth="4" strokeLinecap="round" />
-          <ellipse cx="100" cy="34" rx="22" ry="28" fill="#0B0307" stroke={fill('brass')} strokeWidth="2.5" />
+          <ellipse cx="100" cy="34" rx="22" ry="28" style={{ fill: 'var(--color-screen)' }} stroke={fill('brass')} strokeWidth="2.5" />
           <ellipse cx="100" cy="34" rx="18" ry="24" fill={fill('glow')} opacity=".35" />
           <path d="M90 22 Q94 16 100 15" stroke="#FFF4DC" strokeOpacity=".6" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M136 64 Q132 54 138 48 L144 48 Q150 54 146 64Z" fill="#2B0D22" stroke={fill('brass')} />

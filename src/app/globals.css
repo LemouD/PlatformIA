@@ -17,8 +17,11 @@
   --color-ink-muted: #a8939a;
 
   --color-accent: #c9a46a;
+  --color-on-brass: #12050a;
   --color-velvet: #3a0c1e;
   --color-lacquer: #2b0d22;
+  --color-lacquer-light: #5b2a50;
+  --color-screen: #0b0307;
   --color-brass-light: #f1d3a1;
 
   --color-info: #6fa8ff;
@@ -42,6 +45,33 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
+}
+
+/* Velours bleu nuit: only these tokens change; ink, brass, status colours and type stay. */
+:root[data-theme='nuit'] {
+  --color-canvas: #070b1a;
+  --color-nav: rgb(7 11 26 / 0.88);
+  --color-surface: #0e1533;
+  --color-surface-raised: #18224a;
+  --color-surface-sunken: #04070f;
+  --color-surface-command: #111a3d;
+  --color-line: #1c2752;
+  --color-line-strong: #2b3a75;
+  --color-line-control: #5c6ca8;
+  --color-ink-soft: #cdd3e8;
+  --color-ink-muted: #8e98bd;
+  --color-on-brass: #070b1a;
+  --color-velvet: #142158;
+  --color-lacquer: #1a2452;
+  --color-lacquer-light: #34468f;
+  --color-screen: #03050c;
+}
+
+/* Theme switch: a 600 ms cross-fade of the whole page, opacity only. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :focus-visible {
@@ -68,9 +98,9 @@
 .velvet-folds {
   background-image: repeating-linear-gradient(
     90deg,
-    #1c0610 0,
+    var(--color-canvas) 0,
     var(--color-velvet) 28px,
-    #1c0610 56px
+    var(--color-canvas) 56px
   );
   opacity: 0.35;
 }

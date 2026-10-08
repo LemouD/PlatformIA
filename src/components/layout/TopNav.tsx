@@ -3,8 +3,11 @@
 import { Bell } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { NAV_ITEMS, isNavItemActive } from '@/config/navigation'
+import type { Theme } from '@/config/theme'
 import type { SystemHealth } from '@/domain/types'
+import { ThemeSwitcher } from './ThemeSwitcher'
 
 const HEALTH_LABEL: Record<SystemHealth, string> = {
   nominal: 'System nominal',
@@ -24,6 +27,7 @@ const HEALTH_DOT: Record<SystemHealth, string> = {
 interface TopNavProps {
   health: SystemHealth
   userInitials: string
+  theme: Theme
 }
 
 function Brand() {
@@ -52,7 +56,50 @@ function Avatar({ initials }: { initials: string }) {
   )
 }
 
-export function TopNav({ health, userInitials }: TopNavProps) {
+/** Desktop account menu: the avatar opens a small panel holding the theme switcher. */
+function AccountMenu({ initials, theme }: { initials: string; theme: Theme }) {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        aria-label="Account"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((value) => !value)}
+        className="flex size-[34px] items-center justify-center rounded-full bg-linear-to-b from-avatar-from to-avatar-to text-[10px] font-bold text-white"
+      >
+        {initials}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-[320px] flex-col gap-2 rounded-card border border-line-strong bg-surface p-3 shadow-panel">
+          <p className="font-mono text-[10px] uppercase text-ink-muted">Appearance</p>
+          <ThemeSwitcher initialTheme={theme} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export function TopNav({ health, userInitials, theme }: TopNavProps) {
   const pathname = usePathname()
 
   return (
@@ -97,7 +144,7 @@ export function TopNav({ health, userInitials }: TopNavProps) {
           >
             <Bell aria-hidden size={14} />
           </button>
-          <Avatar initials={userInitials} />
+          <AccountMenu initials={userInitials} theme={theme} />
         </div>
       </div>
 

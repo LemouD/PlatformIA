@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Bodoni_Moda, IBM_Plex_Mono, Inter } from 'next/font/google'
+import { cookies } from 'next/headers'
 import type { ReactNode } from 'react'
 import { MobileTabBar } from '@/components/layout/MobileTabBar'
 import { TopNav } from '@/components/layout/TopNav'
+import { parseTheme, THEME_COOKIE } from '@/config/theme'
 import { mockSession } from '@/mocks/session'
 import { SystemProvider } from '@/store/SystemProvider'
 import './globals.css'
@@ -32,15 +34,18 @@ export const viewport: Viewport = {
   themeColor: '#12050a',
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // The theme comes from a cookie and is written into the first HTML: no flash, no inline script.
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
+
   return (
-    <html lang="en" className={`${inter.variable} ${plexMono.variable} ${bodoni.variable}`}>
+    <html lang="en" data-theme={theme} className={`${inter.variable} ${plexMono.variable} ${bodoni.variable}`}>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
-        <TopNav health={mockSession.health} userInitials={mockSession.userInitials} />
+        <TopNav health={mockSession.health} userInitials={mockSession.userInitials} theme={theme} />
         <main className="pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
           <SystemProvider>{children}</SystemProvider>
         </main>
-        <MobileTabBar userInitials={mockSession.userInitials} />
+        <MobileTabBar userInitials={mockSession.userInitials} theme={theme} />
         <div aria-hidden className="film-grain" />
       </body>
     </html>
