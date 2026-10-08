@@ -50,6 +50,26 @@ describe('mock event source', () => {
     expect(status('personal')).toBe('IDLE')
   })
 
+  it('pauses and resumes an agent', () => {
+    const { store, scheduler, source } = setup()
+    const availability = () => store.getState().agents.find((agent) => agent.id === 'coding')?.availability
+    source.setAvailability('coding', 'paused')
+    scheduler.advance(300)
+    expect(availability()).toBe('paused')
+    source.setAvailability('coding', 'online')
+    scheduler.advance(300)
+    expect(availability()).toBe('online')
+  })
+
+  it('records when, how long and how much each execution cost', () => {
+    const { store, scheduler, source } = setup()
+    source.submitCommand('Fix the bug in the repo')
+    scheduler.advance(15_000)
+    const [record] = Object.values(store.getState().executions)
+    expect(record).toMatchObject({ result: 'succeeded', tokens: 2450, costUsd: 0.02 })
+    expect(record?.finishedAt).toBeGreaterThan(record?.execution.startedAt ?? Infinity)
+  })
+
   it('ignores decisions on unknown requests', () => {
     const { scheduler, source } = setup()
     source.decide('nope', 'approved')

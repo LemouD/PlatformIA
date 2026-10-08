@@ -80,6 +80,9 @@ export function createMockEventSource(
       approvalAgents.delete(approvalId)
       play(decisionScenario(agentId, approvalId, decision))
     },
+    setAvailability(agentId, availability) {
+      play([{ delayMs: 200, event: { type: 'agent.availability_changed', agentId, availability } }])
+    },
     dispose() {
       timers.forEach((handle) => scheduler.clearTimeout(handle))
       timers.clear()

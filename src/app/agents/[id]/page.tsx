@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { ComingSoon } from '@/components/ui/ComingSoon'
+import { AgentDetail } from '@/features/agents/AgentDetail'
 import { mockAgents } from '@/mocks/agents'
 
 interface AgentPageProps {
@@ -24,5 +24,5 @@ export default async function AgentPage({ params }: AgentPageProps) {
   const { id } = await params
   const agent = findAgent(id)
   if (!agent) notFound()
-  return <ComingSoon title={agent.name} description={agent.description} />
+  return <AgentDetail agentId={agent.id} />
 }

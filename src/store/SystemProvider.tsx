@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, useSyncExternal
 import type { ReactNode } from 'react'
 import { createMockEventSource } from '@/events/mock-source'
 import type { AgentEventSource, ApprovalDecision } from '@/events/source'
+import type { AgentAvailability } from '@/domain/types'
 import { mockAgents } from '@/mocks/agents'
 import { mockSnapshot } from '@/mocks/snapshot'
 import { browserScheduler } from './scheduler'
@@ -16,6 +17,7 @@ interface SystemContextValue {
   store: SystemStore
   submitCommand(command: string): void
   decide(approvalId: string, decision: ApprovalDecision): void
+  setAvailability(agentId: string, availability: AgentAvailability): void
 }
 
 const SystemContext = createContext<SystemContextValue | null>(null)
@@ -51,6 +53,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
     store,
     submitCommand: (command) => source.current?.submitCommand(command),
     decide: (approvalId, decision) => source.current?.decide(approvalId, decision),
+    setAvailability: (agentId, availability) => source.current?.setAvailability(agentId, availability),
   }))
 
   return <SystemContext.Provider value={value}>{children}</SystemContext.Provider>
@@ -69,6 +72,6 @@ export function useSystemState(): SystemState {
 }
 
 export function useSystemActions() {
-  const { submitCommand, decide } = useSystemContext()
-  return { submitCommand, decide }
+  const { submitCommand, decide, setAvailability } = useSystemContext()
+  return { submitCommand, decide, setAvailability }
 }

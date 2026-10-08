@@ -8,6 +8,9 @@ export interface ExecutionRecord {
   steps: ExecutionStep[]
   result: ExecutionResult | null
   errorCode: string | null
+  finishedAt: number | null
+  tokens: number
+  costUsd: number
 }
 
 /** Everything the interface knows about the system, built only from events. */
@@ -164,7 +167,15 @@ function reduce(state: SystemState, event: AgentEvent): SystemState {
 
     case 'execution.started': {
       if (!hasAgent(state, event.execution.agentId)) return reject(state, event, 'unknown agent')
-      const record: ExecutionRecord = { execution: event.execution, steps: [], result: null, errorCode: null }
+      const record: ExecutionRecord = {
+        execution: event.execution,
+        steps: [],
+        result: null,
+        errorCode: null,
+        finishedAt: null,
+        tokens: 0,
+        costUsd: 0,
+      }
       return { ...state, executions: { ...state.executions, [event.execution.id]: record } }
     }
 
@@ -183,6 +194,9 @@ function reduce(state: SystemState, event: AgentEvent): SystemState {
         ...record,
         result: event.result,
         errorCode: event.errorCode === undefined ? null : short(event.errorCode),
+        finishedAt: event.at,
+        tokens: event.tokensIn + event.tokensOut,
+        costUsd: event.costUsd,
       }
       const next = { ...state, executions: { ...state.executions, [event.executionId]: finished } }
       if (event.result === 'succeeded') return next
