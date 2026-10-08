@@ -63,9 +63,24 @@ export function commandScenario(command: string, ids: { task: string; execution:
     },
   })
 
+  const log = (
+    level: 'debug' | 'info' | 'warn',
+    component: string,
+    message: string,
+    index: number,
+  ): ScenarioStep => ({
+    delayMs: 0,
+    event: {
+      type: 'log.appended',
+      log: { id: `${ids.execution}-log-${index}`, executionId: ids.execution, level, component, timestamp: 0, message },
+    },
+  })
+
   return [
     thinking,
+    log('debug', 'router.nova', `Routing command to one of 4 candidates`, 0),
     { delayMs: 1200, event: { type: 'agent.status_changed', agentId: NOVA, status: 'COMPLETED', activity: 'Command routed' } },
+    log('info', 'router.nova', `Chose ${agentId}`, 1),
     {
       delayMs: 0,
       event: {
@@ -101,9 +116,11 @@ export function commandScenario(command: string, ids: { task: string; execution:
     { delayMs: 1400, event: { type: 'handoff.completed', handoffId: ids.handoff } },
     { delayMs: 0, event: { type: 'agent.status_changed', agentId, status: 'WORKING', activity: 'Working on it' } },
     step('LLM GENERATION', 'running', 'Generating the answer', 1),
+    log('info', 'llm.client', 'Request sent · max 2048 output tokens', 2),
     { delayMs: 900, event: { type: 'task.updated', taskId: ids.task, progress: 35 } },
     { delayMs: 1200, event: { type: 'task.updated', taskId: ids.task, progress: 70 } },
     step('VALIDATION', 'success', 'Answer matches the expected format', 2),
+    log('info', 'engine.validation', 'Output matches the agent schema', 3),
     {
       delayMs: 600,
       event: {
@@ -115,6 +132,7 @@ export function commandScenario(command: string, ids: { task: string; execution:
         costUsd: 0.02,
       },
     },
+    log('info', 'engine.runner', 'Execution succeeded · 1800 in / 650 out tokens · $0.02', 4),
     { delayMs: 0, event: { type: 'task.updated', taskId: ids.task, status: 'completed', progress: 100 } },
     { delayMs: 0, event: { type: 'agent.status_changed', agentId, status: 'COMPLETED', activity: 'Done' } },
   ]

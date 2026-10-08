@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { ComingSoon } from '@/components/ui/ComingSoon'
+import { TasksView } from '@/features/tasks/TasksView'
 
 export const metadata: Metadata = { title: 'Tasks' }
 
 export default function TasksPage() {
-  return <ComingSoon title="Tasks" description="Follow every task from request to completion." />
+  return <TasksView />
 }

@@ -148,15 +148,17 @@ function reduce(state: SystemState, event: AgentEvent): SystemState {
       if (!state.tasks.some((task) => task.id === event.taskId)) return reject(state, event, 'unknown task')
       return {
         ...state,
-        tasks: state.tasks.map((task) =>
-          task.id === event.taskId
-            ? {
-                ...task,
-                status: event.status ?? task.status,
-                progress: event.progress === undefined ? task.progress : Math.min(100, Math.max(0, event.progress)),
-              }
-            : task,
-        ),
+        tasks: state.tasks.map((task) => {
+          if (task.id !== event.taskId) return task
+          const status = event.status ?? task.status
+          const finished = status === 'completed' || status === 'failed'
+          return {
+            ...task,
+            status,
+            progress: event.progress === undefined ? task.progress : Math.min(100, Math.max(0, event.progress)),
+            completedAt: finished ? (task.completedAt ?? event.at) : null,
+          }
+        }),
       }
     }
 
