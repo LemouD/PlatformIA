@@ -134,7 +134,8 @@ async function main(): Promise<void> {
   await loadAgents(deps)
 
   // Either an agent name, or a request in plain French that NOVA routes to the right agent.
-  let key = positionals.length === 1 && positionals[0] && WORK_AGENTS[positionals[0]] ? positionals[0] : undefined
+  const first = positionals[0]
+  let key = positionals.length === 1 && first !== undefined && Object.hasOwn(WORK_AGENTS, first) ? first : undefined
   const fields: Record<string, string> = {}
   if (!key) {
     console.error('NOVA choisit l’agent…')
@@ -143,9 +144,10 @@ async function main(): Promise<void> {
     if (routed.kind === 'no_agent') fail(`Aucun agent adapté : ${routed.reason}`)
     key = routed.agentId
     Object.assign(fields, routed.prefill)
-    console.error(plain(`→ ${WORK_AGENTS[key]?.name ?? key} : ${routed.reason}`))
+    console.error(plain(`→ ${Object.hasOwn(WORK_AGENTS, key) ? WORK_AGENTS[key]?.name : key} : ${routed.reason}`))
   }
-  const draft = WORK_AGENTS[key]
+  // Object.hasOwn: names such as "constructor" or "__proto__" must not resolve to inherited values.
+  const draft = Object.hasOwn(WORK_AGENTS, key) ? WORK_AGENTS[key] : undefined
   if (!draft) fail(`Agent inconnu : ${key}. Lancez « npm run agent -- --liste ».`)
   if (flags.has('exemple')) Object.assign(fields, draft.testInput)
   const attachments: { fieldKey: string; name: string; bytes: Uint8Array }[] = []
