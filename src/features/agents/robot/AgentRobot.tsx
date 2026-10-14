@@ -1,7 +1,7 @@
 'use client'
 
-import { motion, useAnimate, useReducedMotion } from 'motion/react'
-import type { CSSProperties } from 'react'
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useId } from 'react'
 import { STATUS_META } from '@/design/status'
 import type { AgentStatus, AgentType, EnvironmentKind } from '@/domain/types'
@@ -20,11 +20,51 @@ export interface AgentRobotProps {
   scale?: number
   /** Explicit height in px, e.g. the 50 px miniature of the phone agent list. */
   size?: number
+  /** Availability paused: screen, core and antenna off, no state face (design spec 15.5). */
+  paused?: boolean
 }
 
 const STATE_VAR = 'var(--agent-state)'
 const BRASS = '#C9A46A'
 const SPRING_B = { type: 'spring', stiffness: 180, damping: 9, mass: 1 } as const
+const LINE_CONTROL = 'var(--color-line-control)'
+/** Black veil laid over the brass of a paused robot: colour × 0.55, alpha kept at 1 (design spec 15.5). */
+const VEIL = 0.45
+
+interface PauseVeilProps {
+  on: boolean
+  filter: string
+  transition: object
+  children: ReactNode
+}
+
+/**
+ * Draws the parts, then a black silhouette copy over them that fades to 45 % while paused.
+ * Only opacity animates, and the light copy below stays opaque, so nothing turns see-through.
+ * The copy only exists during a pause and its transitions.
+ */
+function PauseVeil({ on, filter, transition, children }: PauseVeilProps) {
+  return (
+    <>
+      {children}
+      <AnimatePresence initial={false}>
+        {on ? (
+          <motion.g
+            key="veil"
+            data-part="pause-veil"
+            filter={filter}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: VEIL }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+          >
+            {children}
+          </motion.g>
+        ) : null}
+      </AnimatePresence>
+    </>
+  )
+}
 
 /** Pivot expressed in the 240 × 300 viewBox, as given by the design reference. */
 function origin(x: number, y: number): CSSProperties {
@@ -58,9 +98,12 @@ export function AgentRobot({
   progress,
   scale = 1,
   size,
+  paused = false,
 }: AgentRobotProps) {
   const reduced = useReducedMotion() ?? false
-  const live = variant === 'world' && !reduced
+  const animated = variant === 'world' && !reduced
+  // A paused robot keeps its status in memory but shows none of it.
+  const live = animated && !paused
   const rhythm = STATE_MOTION[status]
   const prop = resolveRobotProp(role, environment)
   const height = size ?? robotHeight(variant, role, scale)
@@ -89,10 +132,14 @@ export function AgentRobot({
   }, [animate, live, rhythm.blinks])
 
   const floats = live && rhythm.floats
-  const errored = rhythm.pose === 'antenna-bent'
-  const trayOut = rhythm.pose === 'tray'
-  const salute = rhythm.pose === 'salute'
+  const errored = !paused && rhythm.pose === 'antenna-bent'
+  const trayOut = !paused && rhythm.pose === 'tray'
+  const salute = !paused && rhythm.pose === 'salute'
   const fadeFace = { duration: live ? 0.2 : 0 }
+  const face = (shown: AgentStatus) => ({ opacity: !paused && status === shown ? 1 : 0 })
+  const pauseFade = { duration: animated ? 0.6 : 0, ease: [0.4, 0, 0.2, 1] } as const
+  const lit = { opacity: paused ? 0 : 1 }
+  const veil = { on: paused, filter: `url(#${gid('paused-silhouette')})`, transition: pauseFade }
 
   const heartbeat = rhythm.irregular
     ? {
@@ -119,6 +166,9 @@ export function AgentRobot({
       style={{ '--agent-state': STATUS_META[status].color, overflow: 'visible' } as CSSProperties}
     >
       <defs>
+        <filter id={gid('paused-silhouette')} colorInterpolationFilters="sRGB">
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+        </filter>
         <linearGradient id={gid('lacquer')} x1="0" y1="0" x2=".3" y2="1">
           <stop offset="0" stopColor="#5B2240" />
           <stop offset=".5" stopColor="#2B0D22" />
@@ -178,7 +228,7 @@ export function AgentRobot({
           fill="#050103"
           style={origin(120, 272)}
           initial={false}
-          animate={floats ? { scaleX: [1, 0.82, 1], opacity: [0.7, 0.45, 0.7] } : { scaleX: 1, opacity: 0.7 }}
+          animate={floats ? { scaleX: [1, 0.82, 1], opacity: [0.7, 0.45, 0.7] } : { scaleX: 1, opacity: paused ? 0.5 : 0.7 }}
           transition={floats ? loop(moving ? 2.5 : 5) : { duration: 0.4 }}
         />
 
@@ -189,43 +239,53 @@ export function AgentRobot({
           animate={floats ? { y: moving ? [0, -3, 0] : [0, -6, 0], rotate: moving ? 4 : 0 } : { y: 0, rotate: 0 }}
           transition={floats ? { y: loop(moving ? 2.5 : 5), rotate: SPRING_A } : { duration: 0.4 }}
         >
-          <g data-part="tendrils" stroke={BRASS} strokeWidth="1.6" strokeLinecap="round" opacity=".8">
-            {TENDRILS.map((tendril) => (
-              <motion.path
-                key={tendril.part}
-                data-part={tendril.part}
-                d={tendril.d}
-                style={origin(tendril.x, tendril.y)}
-                initial={false}
-                animate={live ? { rotate: moving ? [-14, -2, -14] : [-6, 6, -6] } : { rotate: 0 }}
-                transition={live ? loop(tendril.period) : { duration: 0 }}
-              />
-            ))}
-          </g>
+          <PauseVeil {...veil}>
+            <g data-part="tendrils" stroke={BRASS} strokeWidth="1.6" strokeLinecap="round" opacity=".8">
+              {TENDRILS.map((tendril) => (
+                <motion.path
+                  key={tendril.part}
+                  data-part={tendril.part}
+                  d={tendril.d}
+                  style={origin(tendril.x, tendril.y)}
+                  initial={false}
+                  animate={live ? { rotate: moving ? [-14, -2, -14] : [-6, 6, -6] } : { rotate: 0 }}
+                  transition={live ? loop(tendril.period) : { duration: 0 }}
+                />
+              ))}
+            </g>
+          </PauseVeil>
 
           {prop !== 'orchestrator' ? (
-            <g data-part="arm-left">
-              <path d="M80 140 Q68 162 74 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-              <circle cx="74" cy="185" r="3" fill={BRASS} />
-            </g>
+            <PauseVeil {...veil}>
+              <g data-part="arm-left">
+                <path d="M80 140 Q68 162 74 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+                <circle cx="74" cy="185" r="3" fill={BRASS} />
+              </g>
+            </PauseVeil>
           ) : null}
 
-          <motion.g
-            data-part="arm-right"
-            initial={false}
-            animate={{ opacity: trayOut ? 0 : 1 }}
-            transition={{ duration: 0.12 }}
-          >
-            <path d="M160 140 Q172 160 166 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-            <circle cx="166" cy="185" r="3" fill={BRASS} />
-          </motion.g>
+          <PauseVeil {...veil}>
+            <motion.g
+              data-part="arm-right"
+              initial={false}
+              animate={{ opacity: trayOut ? 0 : 1 }}
+              transition={{ duration: 0.12 }}
+            >
+              <path d="M160 140 Q172 160 166 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+              <circle cx="166" cy="185" r="3" fill={BRASS} />
+            </motion.g>
+          </PauseVeil>
 
           <motion.g
             data-part="tray"
             style={origin(160, 142)}
             initial={false}
             animate={trayOut ? { rotate: 0, opacity: 1 } : { rotate: 80, opacity: 0 }}
-            transition={live ? { rotate: SPRING_A, opacity: { duration: 0.2 } } : { duration: 0 }}
+            transition={
+              live
+                ? { rotate: { ...SPRING_A, delay: 0.8 }, opacity: { duration: 0.2, delay: 0.8 } }
+                : { duration: animated && paused ? 0.6 : 0 }
+            }
           >
             <path d="M160 142 L188 150" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
             <ellipse cx="200" cy="151" rx="17" ry="3.5" fill={fill('brass')} />
@@ -242,11 +302,14 @@ export function AgentRobot({
 
           <g data-part="bell">
             <path d="M80 128 Q120 116 160 128 C176 164 170 210 120 216 C70 210 64 164 80 128Z" fill={fill('glass')} />
-            <path
+            <motion.path
               data-part="rim"
               d="M80 128 Q120 116 160 128 C176 164 170 210 120 216 C70 210 64 164 80 128Z"
               stroke={fill('rim-light')}
               strokeWidth="2"
+              initial={false}
+              animate={lit}
+              transition={pauseFade}
             />
             <path
               data-part="bell-highlight"
@@ -266,9 +329,18 @@ export function AgentRobot({
             fill={fill('core-light')}
             style={origin(120, 170)}
             initial={false}
-            animate={live ? heartbeat.animate : { scale: 1 }}
-            transition={live ? heartbeat.transition : { duration: 0 }}
+            animate={live ? { ...heartbeat.animate, opacity: 1 } : { scale: 1, ...lit }}
+            transition={live ? { ...heartbeat.transition, opacity: pauseFade } : pauseFade}
           />
+
+          <motion.g data-part="paused-body" initial={false} animate={{ opacity: paused ? 1 : 0 }} transition={pauseFade}>
+            <path
+              d="M80 128 Q120 116 160 128 C176 164 170 210 120 216 C70 210 64 164 80 128Z"
+              style={{ stroke: LINE_CONTROL }}
+              strokeWidth="2"
+            />
+            <circle cx="120" cy="170" r="16" style={{ fill: 'var(--color-lacquer)' }} />
+          </motion.g>
 
           <motion.g
             data-part="upper"
@@ -277,8 +349,10 @@ export function AgentRobot({
             animate={{ rotate: salute ? (live ? [0, 20, 20, 0] : 12) : 0 }}
             transition={salute && live ? { duration: 1.2, times: [0, 0.3, 0.6, 1] } : { duration: 0 }}
           >
-            <ellipse data-part="collar" cx="120" cy="128" rx="41" ry="6" fill={fill('brass')} />
-            <path data-part="bowtie" d="M107 121 l13 7 l13 -7 v13 l-13 -6 l-13 6Z" fill={BRASS} />
+            <PauseVeil {...veil}>
+              <ellipse data-part="collar" cx="120" cy="128" rx="41" ry="6" fill={fill('brass')} />
+              <path data-part="bowtie" d="M107 121 l13 7 l13 -7 v13 l-13 -6 l-13 6Z" fill={BRASS} />
+            </PauseVeil>
             <rect data-part="neck" x="112" y="106" width="16" height="16" fill="#14060F" />
 
             <motion.g
@@ -289,7 +363,9 @@ export function AgentRobot({
               transition={live ? (errored ? { ...SPRING_B, delay: 0.12 } : SPRING_A) : { duration: 0 }}
             >
               {/* Solid brass: a gradient on a perfectly vertical stroke has a zero-width box and does not render. */}
-              <path d="M120 44 L120 24" stroke={BRASS} strokeWidth="3" strokeLinecap="round" />
+              <PauseVeil {...veil}>
+                <path d="M120 44 L120 24" stroke={BRASS} strokeWidth="3" strokeLinecap="round" />
+              </PauseVeil>
               <motion.circle
                 data-part="antenna-ball"
                 cx="120"
@@ -298,11 +374,22 @@ export function AgentRobot({
                 fill={fill('antenna-glow')}
                 initial={false}
                 animate={
-                  !live ? { opacity: 1 } : errored ? { opacity: [1, 0.3, 1, 0.5, 1] } : { opacity: [1, 0.45, 1] }
+                  !live ? lit : errored ? { opacity: [1, 0.3, 1, 0.5, 1] } : { opacity: [1, 0.45, 1] }
                 }
-                transition={!live ? { duration: 0 } : errored ? flicker : loop(rhythm.heartbeat)}
+                transition={!live ? pauseFade : errored ? flicker : loop(rhythm.heartbeat)}
               />
-              <circle cx="120" cy="20" r="4.5" fill="#FFF4DC" />
+              <motion.circle cx="120" cy="20" r="4.5" fill="#FFF4DC" initial={false} animate={lit} transition={pauseFade} />
+              <motion.circle
+                data-part="antenna-off"
+                cx="120"
+                cy="20"
+                r="6"
+                style={{ fill: 'var(--color-lacquer)', stroke: LINE_CONTROL }}
+                strokeWidth="1.5"
+                initial={false}
+                animate={{ opacity: paused ? 1 : 0 }}
+                transition={pauseFade}
+              />
             </motion.g>
 
             <g data-part="head">
@@ -346,7 +433,7 @@ export function AgentRobot({
                 data-part="face-idle"
                 style={{ fill: STATE_VAR }}
                 initial={false}
-                animate={{ opacity: status === 'IDLE' ? 1 : 0 }}
+                animate={face('IDLE')}
                 transition={fadeFace}
               >
                 <g data-part="eyes">
@@ -360,7 +447,7 @@ export function AgentRobot({
                 data-part="face-thinking"
                 style={{ fill: STATE_VAR }}
                 initial={false}
-                animate={{ opacity: status === 'THINKING' ? 1 : 0 }}
+                animate={face('THINKING')}
                 transition={fadeFace}
               >
                 <rect x="103" y="65" width="8" height="2.6" rx="1.3" />
@@ -386,7 +473,7 @@ export function AgentRobot({
                 data-part="face-working"
                 style={{ fill: STATE_VAR }}
                 initial={false}
-                animate={{ opacity: status === 'WORKING' ? 1 : 0 }}
+                animate={face('WORKING')}
                 transition={fadeFace}
               >
                 <g data-part="eyes">
@@ -400,7 +487,7 @@ export function AgentRobot({
                 data-part="face-waiting"
                 style={{ fill: STATE_VAR }}
                 initial={false}
-                animate={{ opacity: status === 'WAITING_APPROVAL' ? 1 : 0 }}
+                animate={face('WAITING_APPROVAL')}
                 transition={fadeFace}
               >
                 <g data-part="eyes">
@@ -416,7 +503,7 @@ export function AgentRobot({
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 initial={false}
-                animate={{ opacity: status === 'ERROR' ? 1 : 0 }}
+                animate={face('ERROR')}
                 transition={fadeFace}
               >
                 <path d="M102 63 l8 9 M110 63 l-8 9 M128 63 l8 9 M136 63 l-8 9" />
@@ -429,11 +516,31 @@ export function AgentRobot({
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 initial={false}
-                animate={{ opacity: status === 'COMPLETED' ? 1 : 0 }}
+                animate={face('COMPLETED')}
                 transition={fadeFace}
               >
                 <path d="M102 70 q4 -6 8 0 M128 70 q4 -6 8 0" />
                 <path d="M112 79 q8 6 16 0" />
+              </motion.g>
+
+              <motion.g
+                data-part="face-paused"
+                style={{ stroke: LINE_CONTROL }}
+                strokeLinecap="round"
+                initial={false}
+                animate={{ opacity: paused ? 1 : 0 }}
+                transition={pauseFade}
+              >
+                <path d="M103 70 h8 M129 70 h8" strokeWidth="2.4" />
+                <motion.path
+                  data-part="paused-z"
+                  d="M138 56 h6 l-6 7 h6"
+                  strokeWidth="1.4"
+                  strokeLinejoin="round"
+                  initial={false}
+                  animate={paused && animated ? { y: [0, -3, 0] } : { y: 0 }}
+                  transition={paused && animated ? loop(3) : { duration: 0 }}
+                />
               </motion.g>
 
               <g data-part="status-bar">
@@ -447,77 +554,87 @@ export function AgentRobot({
                   rx="2"
                   style={{ ...origin(98, 97), fill: STATE_VAR }}
                   initial={false}
-                  animate={{ scaleX: statusBarProgress(status, variant, progress) }}
-                  transition={{ duration: live ? 0.4 : 0, ease: 'easeOut' }}
+                  animate={{ scaleX: statusBarProgress(status, variant, progress), ...lit }}
+                  transition={{ duration: live ? 0.4 : 0, ease: 'easeOut', opacity: pauseFade }}
                 />
               </g>
             </g>
           </motion.g>
 
           {prop === 'research' ? (
-            <g data-part="prop-research">
-              <path d="M74 186 L66 198" stroke="#5A3B1A" strokeWidth="5" strokeLinecap="round" />
-              <circle cx="58" cy="210" r="12" fill="#F2E6D8" fillOpacity=".12" stroke={fill('brass')} strokeWidth="3" />
-              <path d="M52 205 q4 -4 9 -2" stroke="#FFF4DC" strokeWidth="1.6" opacity=".7" />
-            </g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-research">
+                <path d="M74 186 L66 198" stroke="#5A3B1A" strokeWidth="5" strokeLinecap="round" />
+                <circle cx="58" cy="210" r="12" fill="#F2E6D8" fillOpacity=".12" stroke={fill('brass')} strokeWidth="3" />
+                <path d="M52 205 q4 -4 9 -2" stroke="#FFF4DC" strokeWidth="1.6" opacity=".7" />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'coding' ? (
-            <g data-part="prop-coding">
-              {/* Counter-flipped so the </> badge stays readable when the robot faces left. */}
-              <motion.g
-                data-part="coding-badge"
-                stroke={BRASS}
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={origin(120, 48.5)}
-                initial={false}
-                animate={{ scaleX: facing === 'left' ? -1 : 1 }}
-                transition={{ duration: live ? 0.26 : 0, ease: 'easeInOut' }}
-              >
-                <path d="M112 46 l-3 2.5 l3 2.5" />
-                <path d="M128 46 l3 2.5 l-3 2.5" />
-                <path d="M122 45 l-4 7" />
-              </motion.g>
-              <path d="M74 186 L64 204" stroke={fill('brass')} strokeWidth="4" strokeLinecap="round" />
-              <path d="M58 202 a8 8 0 1 0 11 8 l-5 -1 l-1 -5Z" fill={fill('brass')} />
-            </g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-coding">
+                {/* Counter-flipped so the </> badge stays readable when the robot faces left. */}
+                <motion.g
+                  data-part="coding-badge"
+                  stroke={BRASS}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={origin(120, 48.5)}
+                  initial={false}
+                  animate={{ scaleX: facing === 'left' ? -1 : 1 }}
+                  transition={{ duration: live ? 0.26 : 0, ease: 'easeInOut' }}
+                >
+                  <path d="M112 46 l-3 2.5 l3 2.5" />
+                  <path d="M128 46 l3 2.5 l-3 2.5" />
+                  <path d="M122 45 l-4 7" />
+                </motion.g>
+                <path d="M74 186 L64 204" stroke={fill('brass')} strokeWidth="4" strokeLinecap="round" />
+                <path d="M58 202 a8 8 0 1 0 11 8 l-5 -1 l-1 -5Z" fill={fill('brass')} />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'home' ? (
-            <g data-part="prop-home">
-              <circle cx="74" cy="193" r="6" stroke={fill('brass')} strokeWidth="2.5" />
-              <circle cx="74" cy="207" r="5" stroke={fill('brass')} strokeWidth="2.5" />
-              <rect x="72.5" y="212" width="3" height="20" fill={BRASS} />
-              <rect x="75.5" y="224" width="6" height="2.5" fill={BRASS} />
-              <rect x="75.5" y="229" width="4" height="2.5" fill={BRASS} />
-            </g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-home">
+                <circle cx="74" cy="193" r="6" stroke={fill('brass')} strokeWidth="2.5" />
+                <circle cx="74" cy="207" r="5" stroke={fill('brass')} strokeWidth="2.5" />
+                <rect x="72.5" y="212" width="3" height="20" fill={BRASS} />
+                <rect x="75.5" y="224" width="6" height="2.5" fill={BRASS} />
+                <rect x="75.5" y="229" width="4" height="2.5" fill={BRASS} />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'personal' ? (
-            <g data-part="prop-personal">
-              <path d="M92 130 q-6 10 -4 18" stroke="#5A3B1A" strokeWidth="2" />
-              <path d="M90 140 q-10 -2 -12 6 q8 2 12 -6Z" fill="#6B5A3A" />
-              <g fill="#F2E6D8">
-                <circle cx="92" cy="124" r="8" opacity=".9" />
-                <circle cx="86" cy="120" r="5" />
-                <circle cx="98" cy="119" r="5" />
-                <circle cx="92" cy="128" r="5" opacity=".8" />
+            <PauseVeil {...veil}>
+              <g data-part="prop-personal">
+                <path d="M92 130 q-6 10 -4 18" stroke="#5A3B1A" strokeWidth="2" />
+                <path d="M90 140 q-10 -2 -12 6 q8 2 12 -6Z" fill="#6B5A3A" />
+                <g fill="#F2E6D8">
+                  <circle cx="92" cy="124" r="8" opacity=".9" />
+                  <circle cx="86" cy="120" r="5" />
+                  <circle cx="98" cy="119" r="5" />
+                  <circle cx="92" cy="128" r="5" opacity=".8" />
+                </g>
+                <circle cx="92" cy="123" r="3" fill="#E9CFC4" />
               </g>
-              <circle cx="92" cy="123" r="3" fill="#E9CFC4" />
-            </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'orchestrator' ? (
-            <g data-part="prop-orchestrator">
-              <path d="M80 140 Q64 128 58 108" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-              <circle cx="58" cy="107" r="3" fill={BRASS} />
-              <g data-part="baton">
-                <path d="M58 107 L36 76" stroke="#F2E6D8" strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="36" cy="76" r="2.5" fill="#FFF4DC" />
+            <PauseVeil {...veil}>
+              <g data-part="prop-orchestrator">
+                <path d="M80 140 Q64 128 58 108" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+                <circle cx="58" cy="107" r="3" fill={BRASS} />
+                <g data-part="baton">
+                  <path d="M58 107 L36 76" stroke="#F2E6D8" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="36" cy="76" r="2.5" fill="#FFF4DC" />
+                </g>
               </g>
-            </g>
+            </PauseVeil>
           ) : null}
         </motion.g>
       </motion.g>

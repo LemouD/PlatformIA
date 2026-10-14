@@ -17,11 +17,12 @@ interface NovaCoreProps {
 export function NovaCore({ agent, rect }: NovaCoreProps) {
   const meta = STATUS_META[agent.status]
   const scale = rect.width / CENTER_WIDTH
+  const paused = agent.availability === 'paused'
 
   return (
     <Link
       href={`/agents/${agent.id}`}
-      aria-label={`${agent.name}, orchestrator, ${meta.description}`}
+      aria-label={`${agent.name}, orchestrator, ${paused ? 'paused' : meta.description}`}
       className="absolute block rounded-card"
       style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
     >
@@ -40,9 +41,10 @@ export function NovaCore({ agent, rect }: NovaCoreProps) {
           environment="generic"
           status={agent.status}
           showScene={false}
+          paused={paused}
           className="absolute -left-[46px] top-[20px] h-[203px] w-[312px]"
         />
-        <Spotlight opacity={0.25} className="left-[70px] top-[18px] h-[150px] w-[80px]" />
+        <Spotlight opacity={paused ? 0 : 0.25} className="left-[70px] top-[18px] h-[150px] w-[80px]" />
         <div className="absolute left-[110px] top-[160px] -translate-x-1/2 -translate-y-full">
           <AgentRobot
             status={agent.status}
@@ -51,6 +53,7 @@ export function NovaCore({ agent, rect }: NovaCoreProps) {
             variant="world"
             facing="right"
             moving={false}
+            paused={paused}
           />
         </div>
         <div className="absolute inset-x-0 top-[168px] flex flex-col items-center gap-1">

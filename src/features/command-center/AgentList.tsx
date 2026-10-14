@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { Panel, PanelHeading } from '@/components/ui/Panel'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import { findOrchestrator, listSpecialists } from '@/domain/selectors'
 import type { Agent } from '@/domain/types'
@@ -22,11 +22,12 @@ export function AgentList({ agents }: AgentListProps) {
       <ul className="flex flex-col gap-2">
         {ordered.map((agent) => {
           const meta = STATUS_META[agent.status]
+          const paused = agent.availability === 'paused'
           return (
             <li key={agent.id}>
               <Link
                 href={`/agents/${agent.id}`}
-                aria-label={`${agent.name}, ${meta.description}`}
+                aria-label={`${agent.name}, ${paused ? 'paused' : meta.description}`}
                 className="flex h-[72px] items-center gap-3 rounded-[14px] bg-surface-sunken px-3"
                 style={{ '--agent-state': meta.color } as CSSProperties}
               >
@@ -34,8 +35,10 @@ export function AgentList({ agents }: AgentListProps) {
                   aria-hidden
                   className="flex size-[52px] shrink-0 items-center justify-center rounded-full"
                   style={{
-                    background:
-                      'radial-gradient(circle, color-mix(in srgb, var(--agent-state) 28%, transparent), transparent 70%)',
+                    // A paused agent has no state light, so no halo either.
+                    background: paused
+                      ? 'none'
+                      : 'radial-gradient(circle, color-mix(in srgb, var(--agent-state) 28%, transparent), transparent 70%)',
                   }}
                 >
                   <AgentRobot
@@ -45,15 +48,18 @@ export function AgentList({ agents }: AgentListProps) {
                     variant="specimen"
                     facing="right"
                     moving={false}
+                    paused={paused}
                     size={50}
                   />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="flex items-center gap-2">
                     <span className="truncate font-display text-[17px] italic text-ink">{agent.name}</span>
-                    <StatusBadge status={agent.status} />
+                    <AgentStateBadge status={agent.status} paused={paused} />
                   </span>
-                  <span className="truncate font-mono text-[11px] text-ink-muted">{agent.activity}</span>
+                  <span className="truncate font-mono text-[11px] text-ink-muted">
+                    {paused ? 'Takes no new task' : agent.activity}
+                  </span>
                 </span>
               </Link>
             </li>

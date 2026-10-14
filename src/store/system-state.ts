@@ -135,7 +135,13 @@ function reduce(state: SystemState, event: AgentEvent): SystemState {
       return {
         ...state,
         agents: state.agents.map((agent) =>
-          agent.id === event.agentId ? { ...agent, availability: event.availability } : agent,
+          agent.id === event.agentId
+            ? {
+                ...agent,
+                availability: event.availability,
+                pausedAt: event.availability === 'paused' ? (agent.pausedAt ?? event.at) : null,
+              }
+            : agent,
         ),
       }
     }

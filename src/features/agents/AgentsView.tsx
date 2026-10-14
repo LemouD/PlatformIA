@@ -1,19 +1,20 @@
 'use client'
 
-import { Bot, Pause } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
+import { useNow } from '@/lib/useNow'
 import { useSystemState } from '@/store/SystemProvider'
 import type { SystemState } from '@/store/system-state'
 import type { AgentFilter } from './agent-view'
-import { AGENT_FILTERS, agentStats, currentTask, matchesAgentFilter, sortAgents } from './agent-view'
+import { AGENT_FILTERS, agentStats, currentTask, matchesAgentFilter, pausedLabel, sortAgents } from './agent-view'
 
-function AgentCard({ agent, state }: { agent: Agent; state: SystemState }) {
+function AgentCard({ agent, state, now }: { agent: Agent; state: SystemState; now: number | null }) {
   const paused = agent.availability === 'paused'
   const task = currentTask(state, agent.id)
   const running = task?.status === 'running' ? task : null
@@ -29,7 +30,7 @@ function AgentCard({ agent, state }: { agent: Agent; state: SystemState }) {
         style={{ '--agent-state': meta.color } as CSSProperties}
       >
         <div className="flex items-start gap-4">
-          <span aria-hidden className={`shrink-0 ${paused ? 'opacity-55 grayscale' : ''}`}>
+          <span aria-hidden className="shrink-0">
             <AgentRobot
               status={agent.status}
               environment={agent.environment}
@@ -37,26 +38,24 @@ function AgentCard({ agent, state }: { agent: Agent; state: SystemState }) {
               variant="specimen"
               facing="right"
               moving={false}
-              progress={running?.progress}
+              progress={running ? running.progress / 100 : undefined}
+              paused={paused}
               size={84}
             />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="truncate font-display text-xl italic text-ink">{agent.name}</h2>
-              {paused ? (
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink-muted bg-surface-raised px-[9px] py-[5px] font-mono text-[9px] font-semibold uppercase text-ink-muted">
-                  <Pause aria-hidden size={9} />
-                  Paused
-                </span>
-              ) : (
-                <StatusBadge status={agent.status} />
-              )}
+              <AgentStateBadge status={agent.status} paused={paused} />
             </div>
             <p className="font-mono text-[10px] uppercase text-info">
               {agent.type} · {agent.model}
             </p>
-            <p className="line-clamp-2 text-sm text-ink-soft">{paused ? 'Takes no new tasks' : agent.activity}</p>
+            {paused ? (
+              <p className="font-mono text-[11px] text-ink-muted">{pausedLabel(now === null ? null : agent.pausedAt, now ?? 0)}</p>
+            ) : (
+              <p className="line-clamp-2 text-sm text-ink-soft">{agent.activity}</p>
+            )}
           </div>
         </div>
 
@@ -84,6 +83,7 @@ function AgentCard({ agent, state }: { agent: Agent; state: SystemState }) {
 /** Every agent at a glance; any number of them, each card opens its detail page. */
 export function AgentsView() {
   const state = useSystemState()
+  const now = useNow(60_000)
   const [filter, setFilter] = useState<AgentFilter>('all')
 
   const agents = sortAgents(state.agents)
@@ -139,7 +139,7 @@ export function AgentsView() {
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map((agent) => (
-                <AgentCard key={agent.id} agent={agent} state={state} />
+                <AgentCard key={agent.id} agent={agent} state={state} now={now} />
               ))}
             </ul>
           )}

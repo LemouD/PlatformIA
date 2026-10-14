@@ -23,6 +23,8 @@ export interface Agent {
   type: AgentType
   status: AgentStatus
   availability: AgentAvailability
+  /** When the agent was paused, if it is paused and the time is known. */
+  pausedAt?: number | null
   /** Short human-readable line describing what the agent is doing right now. */
   activity: string
   model: string

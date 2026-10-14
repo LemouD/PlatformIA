@@ -52,6 +52,7 @@ function AgentBadge({ agent, size }: { agent: Agent | undefined; size: number })
           variant="specimen"
           facing="right"
           moving={false}
+          paused={agent.availability === 'paused'}
           size={size}
         />
       </span>
