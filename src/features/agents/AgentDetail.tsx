@@ -4,7 +4,7 @@ import { ArrowLeft, Pause, Play, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { Panel, PanelHeading } from '@/components/ui/Panel'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { StepStatus } from '@/domain/events'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
@@ -12,8 +12,9 @@ import { AgentEnvironment } from '@/features/ecosystem/AgentEnvironment'
 import { formatLogTime, LEVEL_META } from '@/features/logs/log-view'
 import { TASK_STATUS_META } from '@/features/tasks/task-view'
 import { formatCompactNumber, formatUsd } from '@/lib/format'
+import { useNow } from '@/lib/useNow'
 import { useSystemActions, useSystemState } from '@/store/SystemProvider'
-import { agentLogs, agentStats, currentExecution, currentTask, formatLatency } from './agent-view'
+import { agentLogs, agentStats, currentExecution, currentTask, formatLatency, pausedLabel } from './agent-view'
 
 const LOG_TAIL = 8
 
@@ -34,15 +35,6 @@ function Tile({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function PausedBadge() {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink-muted bg-surface-raised px-[9px] py-[5px] font-mono text-[9px] font-semibold uppercase text-ink-muted">
-      <Pause aria-hidden size={9} />
-      Paused
-    </span>
-  )
-}
-
 function Chips({ items, empty }: { items: readonly string[]; empty: string }) {
   if (items.length === 0) return <p className="text-sm text-ink-muted">{empty}</p>
   return (
@@ -60,6 +52,7 @@ function Chips({ items, empty }: { items: readonly string[]; empty: string }) {
 export function AgentDetail({ agentId }: { agentId: string }) {
   const state = useSystemState()
   const { setAvailability } = useSystemActions()
+  const now = useNow(60_000)
   const agent = state.agents.find((candidate) => candidate.id === agentId)
 
   if (!agent) {
@@ -98,9 +91,18 @@ export function AgentDetail({ agentId }: { agentId: string }) {
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-[28px] leading-none italic text-ink md:text-[40px]">{agent.name}</h1>
-            {paused ? <PausedBadge /> : <StatusBadge status={agent.status} />}
+            <AgentStateBadge status={agent.status} paused={paused} />
           </div>
           <p className="max-w-2xl text-sm text-ink-soft">{agent.description}</p>
+          {paused ? (
+            <div className="flex flex-col gap-1" aria-live="polite">
+              {/* The time needs the clock, which only runs in the browser. */}
+              <p className="font-mono text-[11px] text-ink-muted">
+                {pausedLabel(now === null ? null : agent.pausedAt, now ?? 0)}
+              </p>
+              <p className="text-sm text-ink-soft">NOVA won&apos;t hand it new tasks. Its queued tasks wait until you resume it.</p>
+            </div>
+          ) : null}
         </div>
         <div className="flex gap-2">
           <button
@@ -134,8 +136,14 @@ export function AgentDetail({ agentId }: { agentId: string }) {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <Panel labelledBy="agent-live">
           <PanelHeading id="agent-live" eyebrow="Live" title="Environment" detail={paused ? 'paused' : statusMeta.description} />
-          <div className={`relative mx-auto aspect-[200/130] w-full max-w-[460px] ${paused ? 'opacity-55 grayscale' : ''}`}>
-            <AgentEnvironment environment={agent.environment} status={agent.status} showScene className="absolute inset-0 h-full w-full" />
+          <div className="relative mx-auto aspect-[200/130] w-full max-w-[460px]">
+            <AgentEnvironment
+              environment={agent.environment}
+              status={agent.status}
+              paused={paused}
+              showScene
+              className="absolute inset-0 h-full w-full"
+            />
             <div className="absolute bottom-[14%] left-1/2 -translate-x-1/2">
               <AgentRobot
                 status={agent.status}
@@ -144,14 +152,13 @@ export function AgentDetail({ agentId }: { agentId: string }) {
                 variant="specimen"
                 facing="right"
                 moving={false}
-                progress={task?.status === 'running' ? task.progress : undefined}
+                progress={task?.status === 'running' ? task.progress / 100 : undefined}
+                paused={paused}
                 size={150}
               />
             </div>
           </div>
-          <p className="text-center text-sm text-ink-soft" aria-live="polite">
-            {paused ? 'Paused · takes no new tasks' : agent.activity}
-          </p>
+          {paused ? null : <p className="text-center text-sm text-ink-soft">{agent.activity}</p>}
         </Panel>
 
         <div className="flex flex-col gap-5">

@@ -164,3 +164,15 @@ describe('tasks and executions', () => {
     expect(finished.activity.at(-1)?.message).toBe('Coding Agent execution failed (model_unavailable)')
   })
 })
+
+describe('availability', () => {
+  it('remembers when an agent was paused and forgets it on resume', () => {
+    const pausedEvent = event({ type: 'agent.availability_changed', agentId: 'coding', availability: 'paused', at: 5_000 })
+    const paused = applyEvent(initial(), pausedEvent)
+    expect(paused.agents.find((agent) => agent.id === 'coding')).toMatchObject({ availability: 'paused', pausedAt: 5_000 })
+    const again = applyEvent(paused, event({ type: 'agent.availability_changed', agentId: 'coding', availability: 'paused', at: 9_000 }))
+    expect(again.agents.find((agent) => agent.id === 'coding')?.pausedAt).toBe(5_000)
+    const resumed = applyEvent(again, event({ type: 'agent.availability_changed', agentId: 'coding', availability: 'online', at: 12_000 }))
+    expect(resumed.agents.find((agent) => agent.id === 'coding')).toMatchObject({ availability: 'online', pausedAt: null })
+  })
+})

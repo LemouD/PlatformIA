@@ -79,3 +79,22 @@ export function sortAgents(agents: readonly Agent[]): Agent[] {
     agent.type === 'orchestrator' ? 0 : agent.status === 'WAITING_APPROVAL' || agent.status === 'ERROR' ? 1 : 2
   return [...agents].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
 }
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** "Paused by you at 16:30", "… on 12 Oct" another day, plain "Paused" when the time is unknown (spec 15.5). */
+export function pausedLabel(pausedAt: number | null | undefined, now: number): string {
+  const suffix = ' · takes no new task'
+  if (pausedAt === null || pausedAt === undefined) return `Paused${suffix}`
+  const paused = new Date(pausedAt)
+  const today = new Date(now)
+  const sameDay =
+    paused.getFullYear() === today.getFullYear() &&
+    paused.getMonth() === today.getMonth() &&
+    paused.getDate() === today.getDate()
+  if (sameDay) {
+    const time = `${String(paused.getHours()).padStart(2, '0')}:${String(paused.getMinutes()).padStart(2, '0')}`
+    return `Paused by you at ${time}${suffix}`
+  }
+  return `Paused by you on ${paused.getDate()} ${SHORT_MONTHS[paused.getMonth()]}${suffix}`
+}

@@ -4,7 +4,7 @@ import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
@@ -28,7 +28,8 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
   const y = useMotionValue(WALK_ZONE.cy)
   const [walking, setWalking] = useState(false)
   const [facing, setFacing] = useState<'left' | 'right'>('left')
-  const wanders = agent.status === 'IDLE' && !reduced
+  const paused = agent.availability === 'paused'
+  const wanders = agent.status === 'IDLE' && !paused && !reduced
 
   useEffect(() => {
     if (!wanders) return
@@ -58,13 +59,18 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
       cancelled = true
       clearTimeout(timer)
       running.forEach((animation) => animation.stop())
+      // Finish the step instead of freezing mid-stride: 300 ms of braking along the current velocity.
+      const brake = (value: typeof x) =>
+        animate(value, value.get() + value.getVelocity() * 0.15, { duration: 0.3, ease: 'easeOut' })
+      brake(x)
+      brake(y)
     }
   }, [wanders, x, y])
 
   return (
     <Link
       href={`/agents/${agent.id}`}
-      aria-label={`${agent.name}, ${meta.description}`}
+      aria-label={`${agent.name}, ${paused ? 'paused' : meta.description}`}
       className="absolute block rounded-card"
       style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
     >
@@ -82,13 +88,14 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
         <AgentEnvironment
           environment={agent.environment}
           status={agent.status}
+          paused={paused}
           showScene
           className="absolute left-[10px] top-[22px] h-[162.5px] w-[250px]"
         />
 
         <motion.div className="absolute left-0 top-0" style={{ x, y }}>
           <Spotlight
-            opacity={agent.status === 'IDLE' ? 0 : 0.45}
+            opacity={agent.status === 'IDLE' || paused ? 0 : 0.45}
             className="-left-[35px] -top-[130px] h-[130px] w-[70px]"
           />
           <div className="absolute -translate-x-1/2 -translate-y-full">
@@ -99,6 +106,7 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
               variant="world"
               facing={facing}
               moving={walking && wanders}
+              paused={paused}
             />
           </div>
         </motion.div>
@@ -106,9 +114,9 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
         <div className="absolute left-[18px] top-[8px] flex flex-col gap-[5px]">
           <span className="flex items-center gap-2">
             <span className="font-display text-[15px] italic text-ink">{agent.name}</span>
-            <StatusBadge status={agent.status} />
+            <AgentStateBadge status={agent.status} paused={paused} />
           </span>
-          <span className="font-mono text-[8px] text-ink-muted">{agent.activity}</span>
+          <span className="font-mono text-[8px] text-ink-muted">{paused ? 'Takes no new task' : agent.activity}</span>
         </div>
       </div>
     </Link>

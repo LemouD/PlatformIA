@@ -11,6 +11,7 @@ import {
   currentTask,
   formatLatency,
   matchesAgentFilter,
+  pausedLabel,
   sortAgents,
 } from './agent-view'
 
@@ -111,5 +112,19 @@ describe('agent list', () => {
       agent({ id: 'n', name: 'NOVA', type: 'orchestrator' }),
     ])
     expect(sorted.map((item) => item.id)).toEqual(['n', 'w', 'a', 'b'])
+  })
+})
+
+describe('pausedLabel', () => {
+  const now = new Date(2026, 9, 14, 18, 0).getTime()
+
+  it('gives the time the same day and the date another day', () => {
+    expect(pausedLabel(new Date(2026, 9, 14, 16, 30).getTime(), now)).toBe('Paused by you at 16:30 · takes no new task')
+    expect(pausedLabel(new Date(2026, 9, 12, 9, 5).getTime(), now)).toBe('Paused by you on 12 Oct · takes no new task')
+  })
+
+  it('stays vague when the time is unknown', () => {
+    expect(pausedLabel(null, now)).toBe('Paused · takes no new task')
+    expect(pausedLabel(undefined, now)).toBe('Paused · takes no new task')
   })
 })
