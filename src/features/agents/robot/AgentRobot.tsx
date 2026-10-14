@@ -1,7 +1,7 @@
 'use client'
 
-import { motion, useAnimate, useReducedMotion } from 'motion/react'
-import type { CSSProperties } from 'react'
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useId } from 'react'
 import { STATUS_META } from '@/design/status'
 import type { AgentStatus, AgentType, EnvironmentKind } from '@/domain/types'
@@ -28,8 +28,43 @@ const STATE_VAR = 'var(--agent-state)'
 const BRASS = '#C9A46A'
 const SPRING_B = { type: 'spring', stiffness: 180, damping: 9, mass: 1 } as const
 const LINE_CONTROL = 'var(--color-line-control)'
-/** Dimmed brass of a paused robot. */
-const DIM = 0.55
+/** Black veil laid over the brass of a paused robot: colour × 0.55, alpha kept at 1 (design spec 15.5). */
+const VEIL = 0.45
+
+interface PauseVeilProps {
+  on: boolean
+  filter: string
+  transition: object
+  children: ReactNode
+}
+
+/**
+ * Draws the parts, then a black silhouette copy over them that fades to 45 % while paused.
+ * Only opacity animates, and the light copy below stays opaque, so nothing turns see-through.
+ * The copy only exists during a pause and its transitions.
+ */
+function PauseVeil({ on, filter, transition, children }: PauseVeilProps) {
+  return (
+    <>
+      {children}
+      <AnimatePresence initial={false}>
+        {on ? (
+          <motion.g
+            key="veil"
+            data-part="pause-veil"
+            filter={filter}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: VEIL }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+          >
+            {children}
+          </motion.g>
+        ) : null}
+      </AnimatePresence>
+    </>
+  )
+}
 
 /** Pivot expressed in the 240 × 300 viewBox, as given by the design reference. */
 function origin(x: number, y: number): CSSProperties {
@@ -104,7 +139,7 @@ export function AgentRobot({
   const face = (shown: AgentStatus) => ({ opacity: !paused && status === shown ? 1 : 0 })
   const pauseFade = { duration: animated ? 0.6 : 0, ease: [0.4, 0, 0.2, 1] } as const
   const lit = { opacity: paused ? 0 : 1 }
-  const brass = (base = 1) => ({ opacity: paused ? base * DIM : base })
+  const veil = { on: paused, filter: `url(#${gid('paused-silhouette')})`, transition: pauseFade }
 
   const heartbeat = rhythm.irregular
     ? {
@@ -131,6 +166,9 @@ export function AgentRobot({
       style={{ '--agent-state': STATUS_META[status].color, overflow: 'visible' } as CSSProperties}
     >
       <defs>
+        <filter id={gid('paused-silhouette')} colorInterpolationFilters="sRGB">
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+        </filter>
         <linearGradient id={gid('lacquer')} x1="0" y1="0" x2=".3" y2="1">
           <stop offset="0" stopColor="#5B2240" />
           <stop offset=".5" stopColor="#2B0D22" />
@@ -201,44 +239,42 @@ export function AgentRobot({
           animate={floats ? { y: moving ? [0, -3, 0] : [0, -6, 0], rotate: moving ? 4 : 0 } : { y: 0, rotate: 0 }}
           transition={floats ? { y: loop(moving ? 2.5 : 5), rotate: SPRING_A } : { duration: 0.4 }}
         >
-          <motion.g
-            data-part="tendrils"
-            stroke={BRASS}
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            initial={false}
-            animate={brass(0.8)}
-            transition={pauseFade}
-          >
-            {TENDRILS.map((tendril) => (
-              <motion.path
-                key={tendril.part}
-                data-part={tendril.part}
-                d={tendril.d}
-                style={origin(tendril.x, tendril.y)}
-                initial={false}
-                animate={live ? { rotate: moving ? [-14, -2, -14] : [-6, 6, -6] } : { rotate: 0 }}
-                transition={live ? loop(tendril.period) : { duration: 0 }}
-              />
-            ))}
-          </motion.g>
+          <PauseVeil {...veil}>
+            <g data-part="tendrils" stroke={BRASS} strokeWidth="1.6" strokeLinecap="round" opacity=".8">
+              {TENDRILS.map((tendril) => (
+                <motion.path
+                  key={tendril.part}
+                  data-part={tendril.part}
+                  d={tendril.d}
+                  style={origin(tendril.x, tendril.y)}
+                  initial={false}
+                  animate={live ? { rotate: moving ? [-14, -2, -14] : [-6, 6, -6] } : { rotate: 0 }}
+                  transition={live ? loop(tendril.period) : { duration: 0 }}
+                />
+              ))}
+            </g>
+          </PauseVeil>
 
           {prop !== 'orchestrator' ? (
-            <motion.g data-part="arm-left" initial={false} animate={brass()} transition={pauseFade}>
-              <path d="M80 140 Q68 162 74 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-              <circle cx="74" cy="185" r="3" fill={BRASS} />
-            </motion.g>
+            <PauseVeil {...veil}>
+              <g data-part="arm-left">
+                <path d="M80 140 Q68 162 74 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+                <circle cx="74" cy="185" r="3" fill={BRASS} />
+              </g>
+            </PauseVeil>
           ) : null}
 
-          <motion.g
-            data-part="arm-right"
-            initial={false}
-            animate={{ opacity: trayOut ? 0 : paused ? DIM : 1 }}
-            transition={paused ? pauseFade : { duration: 0.12 }}
-          >
-            <path d="M160 140 Q172 160 166 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-            <circle cx="166" cy="185" r="3" fill={BRASS} />
-          </motion.g>
+          <PauseVeil {...veil}>
+            <motion.g
+              data-part="arm-right"
+              initial={false}
+              animate={{ opacity: trayOut ? 0 : 1 }}
+              transition={{ duration: 0.12 }}
+            >
+              <path d="M160 140 Q172 160 166 184" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+              <circle cx="166" cy="185" r="3" fill={BRASS} />
+            </motion.g>
+          </PauseVeil>
 
           <motion.g
             data-part="tray"
@@ -313,10 +349,10 @@ export function AgentRobot({
             animate={{ rotate: salute ? (live ? [0, 20, 20, 0] : 12) : 0 }}
             transition={salute && live ? { duration: 1.2, times: [0, 0.3, 0.6, 1] } : { duration: 0 }}
           >
-            <motion.g initial={false} animate={brass()} transition={pauseFade}>
+            <PauseVeil {...veil}>
               <ellipse data-part="collar" cx="120" cy="128" rx="41" ry="6" fill={fill('brass')} />
               <path data-part="bowtie" d="M107 121 l13 7 l13 -7 v13 l-13 -6 l-13 6Z" fill={BRASS} />
-            </motion.g>
+            </PauseVeil>
             <rect data-part="neck" x="112" y="106" width="16" height="16" fill="#14060F" />
 
             <motion.g
@@ -327,15 +363,9 @@ export function AgentRobot({
               transition={live ? (errored ? { ...SPRING_B, delay: 0.12 } : SPRING_A) : { duration: 0 }}
             >
               {/* Solid brass: a gradient on a perfectly vertical stroke has a zero-width box and does not render. */}
-              <motion.path
-                d="M120 44 L120 24"
-                stroke={BRASS}
-                strokeWidth="3"
-                strokeLinecap="round"
-                initial={false}
-                animate={brass()}
-                transition={pauseFade}
-              />
+              <PauseVeil {...veil}>
+                <path d="M120 44 L120 24" stroke={BRASS} strokeWidth="3" strokeLinecap="round" />
+              </PauseVeil>
               <motion.circle
                 data-part="antenna-ball"
                 cx="120"
@@ -532,69 +562,79 @@ export function AgentRobot({
           </motion.g>
 
           {prop === 'research' ? (
-            <motion.g data-part="prop-research" initial={false} animate={brass()} transition={pauseFade}>
-              <path d="M74 186 L66 198" stroke="#5A3B1A" strokeWidth="5" strokeLinecap="round" />
-              <circle cx="58" cy="210" r="12" fill="#F2E6D8" fillOpacity=".12" stroke={fill('brass')} strokeWidth="3" />
-              <path d="M52 205 q4 -4 9 -2" stroke="#FFF4DC" strokeWidth="1.6" opacity=".7" />
-            </motion.g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-research">
+                <path d="M74 186 L66 198" stroke="#5A3B1A" strokeWidth="5" strokeLinecap="round" />
+                <circle cx="58" cy="210" r="12" fill="#F2E6D8" fillOpacity=".12" stroke={fill('brass')} strokeWidth="3" />
+                <path d="M52 205 q4 -4 9 -2" stroke="#FFF4DC" strokeWidth="1.6" opacity=".7" />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'coding' ? (
-            <motion.g data-part="prop-coding" initial={false} animate={brass()} transition={pauseFade}>
-              {/* Counter-flipped so the </> badge stays readable when the robot faces left. */}
-              <motion.g
-                data-part="coding-badge"
-                stroke={BRASS}
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={origin(120, 48.5)}
-                initial={false}
-                animate={{ scaleX: facing === 'left' ? -1 : 1 }}
-                transition={{ duration: live ? 0.26 : 0, ease: 'easeInOut' }}
-              >
-                <path d="M112 46 l-3 2.5 l3 2.5" />
-                <path d="M128 46 l3 2.5 l-3 2.5" />
-                <path d="M122 45 l-4 7" />
-              </motion.g>
-              <path d="M74 186 L64 204" stroke={fill('brass')} strokeWidth="4" strokeLinecap="round" />
-              <path d="M58 202 a8 8 0 1 0 11 8 l-5 -1 l-1 -5Z" fill={fill('brass')} />
-            </motion.g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-coding">
+                {/* Counter-flipped so the </> badge stays readable when the robot faces left. */}
+                <motion.g
+                  data-part="coding-badge"
+                  stroke={BRASS}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={origin(120, 48.5)}
+                  initial={false}
+                  animate={{ scaleX: facing === 'left' ? -1 : 1 }}
+                  transition={{ duration: live ? 0.26 : 0, ease: 'easeInOut' }}
+                >
+                  <path d="M112 46 l-3 2.5 l3 2.5" />
+                  <path d="M128 46 l3 2.5 l-3 2.5" />
+                  <path d="M122 45 l-4 7" />
+                </motion.g>
+                <path d="M74 186 L64 204" stroke={fill('brass')} strokeWidth="4" strokeLinecap="round" />
+                <path d="M58 202 a8 8 0 1 0 11 8 l-5 -1 l-1 -5Z" fill={fill('brass')} />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'home' ? (
-            <motion.g data-part="prop-home" initial={false} animate={brass()} transition={pauseFade}>
-              <circle cx="74" cy="193" r="6" stroke={fill('brass')} strokeWidth="2.5" />
-              <circle cx="74" cy="207" r="5" stroke={fill('brass')} strokeWidth="2.5" />
-              <rect x="72.5" y="212" width="3" height="20" fill={BRASS} />
-              <rect x="75.5" y="224" width="6" height="2.5" fill={BRASS} />
-              <rect x="75.5" y="229" width="4" height="2.5" fill={BRASS} />
-            </motion.g>
+            <PauseVeil {...veil}>
+              <g data-part="prop-home">
+                <circle cx="74" cy="193" r="6" stroke={fill('brass')} strokeWidth="2.5" />
+                <circle cx="74" cy="207" r="5" stroke={fill('brass')} strokeWidth="2.5" />
+                <rect x="72.5" y="212" width="3" height="20" fill={BRASS} />
+                <rect x="75.5" y="224" width="6" height="2.5" fill={BRASS} />
+                <rect x="75.5" y="229" width="4" height="2.5" fill={BRASS} />
+              </g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'personal' ? (
-            <motion.g data-part="prop-personal" initial={false} animate={brass()} transition={pauseFade}>
-              <path d="M92 130 q-6 10 -4 18" stroke="#5A3B1A" strokeWidth="2" />
-              <path d="M90 140 q-10 -2 -12 6 q8 2 12 -6Z" fill="#6B5A3A" />
-              <g fill="#F2E6D8">
-                <circle cx="92" cy="124" r="8" opacity=".9" />
-                <circle cx="86" cy="120" r="5" />
-                <circle cx="98" cy="119" r="5" />
-                <circle cx="92" cy="128" r="5" opacity=".8" />
+            <PauseVeil {...veil}>
+              <g data-part="prop-personal">
+                <path d="M92 130 q-6 10 -4 18" stroke="#5A3B1A" strokeWidth="2" />
+                <path d="M90 140 q-10 -2 -12 6 q8 2 12 -6Z" fill="#6B5A3A" />
+                <g fill="#F2E6D8">
+                  <circle cx="92" cy="124" r="8" opacity=".9" />
+                  <circle cx="86" cy="120" r="5" />
+                  <circle cx="98" cy="119" r="5" />
+                  <circle cx="92" cy="128" r="5" opacity=".8" />
+                </g>
+                <circle cx="92" cy="123" r="3" fill="#E9CFC4" />
               </g>
-              <circle cx="92" cy="123" r="3" fill="#E9CFC4" />
-            </motion.g>
+            </PauseVeil>
           ) : null}
 
           {prop === 'orchestrator' ? (
-            <motion.g data-part="prop-orchestrator" initial={false} animate={brass()} transition={pauseFade}>
-              <path d="M80 140 Q64 128 58 108" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
-              <circle cx="58" cy="107" r="3" fill={BRASS} />
-              <g data-part="baton">
-                <path d="M58 107 L36 76" stroke="#F2E6D8" strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="36" cy="76" r="2.5" fill="#FFF4DC" />
+            <PauseVeil {...veil}>
+              <g data-part="prop-orchestrator">
+                <path d="M80 140 Q64 128 58 108" stroke={fill('brass')} strokeWidth="3" strokeLinecap="round" />
+                <circle cx="58" cy="107" r="3" fill={BRASS} />
+                <g data-part="baton">
+                  <path d="M58 107 L36 76" stroke="#F2E6D8" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="36" cy="76" r="2.5" fill="#FFF4DC" />
+                </g>
               </g>
-            </motion.g>
+            </PauseVeil>
           ) : null}
         </motion.g>
       </motion.g>
