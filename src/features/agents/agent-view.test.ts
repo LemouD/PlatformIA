@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { Task } from '@/domain/events'
+import type { Agent } from '@/domain/types'
 import { mockAgents } from '@/mocks/agents'
 import { createInitialState } from '@/store/system-state'
 import type { ExecutionRecord, SystemState } from '@/store/system-state'
-import { agentLogs, agentStats, currentExecution, currentTask, formatLatency } from './agent-view'
+import {
+  agentLogs,
+  agentStats,
+  currentExecution,
+  currentTask,
+  formatLatency,
+  matchesAgentFilter,
+  sortAgents,
+} from './agent-view'
 
 const METRICS = { runningTasks: 0, apiUptime: 100, tokens: 0, costTodayUsd: 0 }
 
@@ -76,5 +85,31 @@ describe('formatLatency', () => {
     expect(formatLatency(null)).toBe('—')
     expect(formatLatency(840)).toBe('840 ms')
     expect(formatLatency(4200)).toBe('4.2s')
+  })
+})
+
+describe('agent list', () => {
+  const base: Agent = { ...mockAgents[1]!, id: 'x', name: 'X', type: 'specialist', availability: 'online' }
+  const agent = (patch: Partial<Agent>): Agent => ({ ...base, ...patch })
+
+  it('filters by what the agent is doing, paused agents only under Paused', () => {
+    const working = agent({ status: 'WORKING' })
+    const resting = agent({ status: 'COMPLETED' })
+    const paused = agent({ status: 'WORKING', availability: 'paused' })
+    expect(matchesAgentFilter(working, 'busy')).toBe(true)
+    expect(matchesAgentFilter(resting, 'idle')).toBe(true)
+    expect(matchesAgentFilter(paused, 'busy')).toBe(false)
+    expect(matchesAgentFilter(paused, 'paused')).toBe(true)
+    expect(matchesAgentFilter(paused, 'all')).toBe(true)
+  })
+
+  it('puts the orchestrator first, then agents that need you', () => {
+    const sorted = sortAgents([
+      agent({ id: 'b', name: 'Beta', status: 'IDLE' }),
+      agent({ id: 'a', name: 'Alpha', status: 'IDLE' }),
+      agent({ id: 'w', name: 'Zed', status: 'WAITING_APPROVAL' }),
+      agent({ id: 'n', name: 'NOVA', type: 'orchestrator' }),
+    ])
+    expect(sorted.map((item) => item.id)).toEqual(['n', 'w', 'a', 'b'])
   })
 })

@@ -86,9 +86,9 @@ export function AgentDetail({ agentId }: { agentId: string }) {
       className="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-4 pt-4 pb-6 md:px-9 md:pt-[30px]"
       style={{ '--agent-state': statusMeta.color } as CSSProperties}
     >
-      <Link href="/" className="flex w-fit items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
+      <Link href="/agents" className="flex w-fit items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
         <ArrowLeft aria-hidden size={14} />
-        Command Center
+        All agents
       </Link>
 
       <header className="flex flex-wrap items-end justify-between gap-4">

@@ -1,4 +1,5 @@
 import type { Log, Task } from '@/domain/events'
+import type { Agent } from '@/domain/types'
 import type { ExecutionRecord, SystemState } from '@/store/system-state'
 
 export interface AgentStats {
@@ -53,4 +54,28 @@ export function agentLogs(state: SystemState, agentId: string, limit: number): L
 export function formatLatency(ms: number | null): string {
   if (ms === null) return '—'
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)}s`
+}
+
+export type AgentFilter = 'all' | 'busy' | 'idle' | 'paused'
+
+export const AGENT_FILTERS: readonly { value: AgentFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'busy', label: 'Busy' },
+  { value: 'idle', label: 'Idle' },
+  { value: 'paused', label: 'Paused' },
+]
+
+export function matchesAgentFilter(agent: Agent, filter: AgentFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'paused') return agent.availability === 'paused'
+  if (agent.availability === 'paused') return false
+  const idle = agent.status === 'IDLE' || agent.status === 'COMPLETED'
+  return filter === 'idle' ? idle : !idle
+}
+
+/** Orchestrators first, then agents that need you, then the rest by name. */
+export function sortAgents(agents: readonly Agent[]): Agent[] {
+  const rank = (agent: Agent) =>
+    agent.type === 'orchestrator' ? 0 : agent.status === 'WAITING_APPROVAL' || agent.status === 'ERROR' ? 1 : 2
+  return [...agents].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
 }
