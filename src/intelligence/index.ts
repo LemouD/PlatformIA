@@ -24,3 +24,15 @@ export { routeCommand, completeHandoff, type RouterDeps, type RouteResult } from
 export { registerExternalAgent, rotateExternalToken, type ExternalDeps } from './external/register'
 export { createExternalGateway, type ExternalGateway, type GatewayResult } from './external/gateway'
 export { getExternalAgentHealth } from './external/health'
+export type * from './conversation/types'
+export { createAnthropicChatClient } from './llm/anthropic-chat-client'
+export { createUserBudgets, type UserBudgets, type BudgetRefusal } from './conversation/budget'
+export { apiKeyFor, createUserClients, type UserClients } from './conversation/clients'
+export {
+  startConversation,
+  sendMessage,
+  type ConversationDeps,
+  type ConversationError,
+  type SendMessageRequest,
+  type SendMessageResult,
+} from './conversation/turn'

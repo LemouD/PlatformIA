@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { costUsd, resolveAllowedModel } from './pricing'
+import { cachedCostUsd, costUsd, resolveAllowedModel } from './pricing'
 
 describe('costUsd', () => {
   it('prices Opus 5.5 at 4 / 20 USD per million tokens', () => {
@@ -7,6 +7,13 @@ describe('costUsd', () => {
   })
   it('prices Sonnet 5.5 at 2 / 10 USD per million tokens', () => {
     expect(costUsd('claude-sonnet-5-5', 2000, 1000)).toBeCloseTo(0.014, 6)
+  })
+})
+
+describe('cachedCostUsd', () => {
+  it('prices Sonnet 5.5 cache writes at 2.50 and cache reads at 0.20 USD per million tokens', () => {
+    const usage = { inputTokens: 1_000_000, cacheWriteTokens: 1_000_000, cacheReadTokens: 1_000_000, outputTokens: 1_000_000 }
+    expect(cachedCostUsd('claude-sonnet-5-5', usage)).toBeCloseTo(2 + 2.5 + 0.2 + 10, 6)
   })
 })
 
