@@ -37,6 +37,8 @@ export interface ConversationProfile {
   tools: ConversationTool[]
   limits: ConversationLimits
   budget: { monthlyUsd: number; dailyUsd: number }
+  /** Memories are sent to the model at the start of each segment, as data. */
+  memory: boolean
   allowedRoles: Role[]
 }
 
@@ -54,6 +56,8 @@ export interface ConversationRecord {
   segmentSummary: string | null
   /** Sticky: once external content entered the conversation, every write needs confirmation. */
   external: boolean
+  /** Memory id → version already sent to the model in this segment: changes are announced, never rewritten. */
+  memoriesSent: Record<string, number>
   version: number
 }
 
@@ -85,10 +89,35 @@ export interface TurnRepo {
   listSegment(conversationId: string, segment: number): Promise<TurnRecord[]>
 }
 
+export interface MemoryRecord {
+  id: string
+  text: string
+  origin: Origin
+  source: 'message' | 'piece_jointe' | 'texte_colle'
+  /** Conversation it came from; null when she wrote it on the memories page. */
+  conversationId: string | null
+  /** Archived memories stay on her page and are no longer sent to the model. */
+  archived: boolean
+  editedByUser: boolean
+  createdAt: number
+  updatedAt: number
+  version: number
+}
+
+export interface MemoryRepo {
+  list(): Promise<MemoryRecord[]>
+  get(id: string): Promise<MemoryRecord | null>
+  insert(record: MemoryRecord): Promise<void>
+  compareAndSet(id: string, expectedVersion: number, next: MemoryRecord): Promise<boolean>
+  /** Real deletion of the encrypted record. */
+  remove(id: string): Promise<void>
+}
+
 /** One user's private space, already bound to the session. Unknown or foreign ids return null. */
 export interface PrivateSpace {
   conversations: ConversationRepo
   turns: TurnRepo
+  memories: MemoryRepo
 }
 
 /** Spending per user and profile. No content: tokens, cost, date. */

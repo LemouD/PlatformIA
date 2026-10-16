@@ -5,6 +5,8 @@ import type {
   ChatResult,
   ConversationRecord,
   ConversationRepo,
+  MemoryRecord,
+  MemoryRepo,
   PrivateSpace,
   TurnRecord,
   TurnRepo,
@@ -58,10 +60,36 @@ export class MemoryTurnRepo implements TurnRepo {
   }
 }
 
+export class MemoryMemoryRepo implements MemoryRepo {
+  readonly records = new Map<string, MemoryRecord>()
+
+  async list(): Promise<MemoryRecord[]> {
+    return [...this.records.values()].map(copy)
+  }
+  async get(id: string): Promise<MemoryRecord | null> {
+    const record = this.records.get(id)
+    return record ? copy(record) : null
+  }
+  async insert(record: MemoryRecord): Promise<void> {
+    if (this.records.has(record.id)) throw new Error(`duplicate memory ${record.id}`)
+    this.records.set(record.id, copy(record))
+  }
+  async compareAndSet(id: string, expectedVersion: number, next: MemoryRecord): Promise<boolean> {
+    const current = this.records.get(id)
+    if (!current || current.version !== expectedVersion) return false
+    this.records.set(id, copy(next))
+    return true
+  }
+  async remove(id: string): Promise<void> {
+    this.records.delete(id)
+  }
+}
+
 /** One user's space. Tests give each user their own instance, as the session binding does. */
 export class MemoryPrivateSpace implements PrivateSpace {
   readonly conversations = new MemoryConversationRepo()
   readonly turns = new MemoryTurnRepo()
+  readonly memories = new MemoryMemoryRepo()
 }
 
 export class MemoryUsageLedger implements UsageLedger {

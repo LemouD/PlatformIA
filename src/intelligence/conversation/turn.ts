@@ -10,6 +10,7 @@ import { resetsAt, type BudgetRefusal, type UserBudgets } from './budget'
 import type { UserClients } from './clients'
 import { summarizeSegment } from './compaction'
 import { buildUserMessage, callSize, dataTag, dateLine, toolSpecs } from './context'
+import { activeMemories, memoryBlock, memoryChanges } from './memory'
 import type {
   ChatRequest,
   ChatResult,
@@ -108,6 +109,7 @@ export async function startConversation(
     segment: 0,
     segmentSummary: null,
     external: false,
+    memoriesSent: {},
     version: 1,
   }
   await deps.space.conversations.insert(conversation)
@@ -192,6 +194,8 @@ async function runTurn(
         ...conversation,
         segment: conversation.segment + 1,
         segmentSummary: summary.summary,
+        // The new segment re-sends every memory in its first message.
+        memoriesSent: {},
         updatedAt: deps.clock.now(),
         version: conversation.version + 1,
       }
@@ -201,14 +205,29 @@ async function runTurn(
     }
   }
 
-  // 4. The new user message. The summary opens the segment as data, marked with the conversation's origin.
+  // 4. The new user message. The summary and the memories open the segment as data; later memory
+  // changes are announced in a data line, so the history is never rewritten.
   const opening =
     history.length === 0 && conversation.segmentSummary
       ? [dataTag('resume', { origine: conversation.external ? 'externe' : 'utilisatrice' }, conversation.segmentSummary)]
       : []
+  const notes = [dateLine(deps.clock.now(), deps.settings.timeZone)]
+  let memoriesSent = conversation.memoriesSent
+  if (profile.memory) {
+    const memories = await activeMemories(deps.space)
+    if (history.length === 0) {
+      const block = memoryBlock(memories)
+      opening.push(block.text)
+      memoriesSent = block.sent
+    } else {
+      const changes = memoryChanges(conversation.memoriesSent, memories)
+      if (changes.text) notes.push(changes.text)
+      memoriesSent = changes.sent
+    }
+  }
   const userMessage = buildUserMessage({
     opening,
-    notes: [dateLine(deps.clock.now(), deps.settings.timeZone)],
+    notes,
     attachments: media,
     typed: typedIsPasted ? null : typedRaw.value.trim() || null,
     pasted: pastedParts.length > 0 ? pastedParts.join('\n\n') : null,
@@ -359,6 +378,7 @@ async function runTurn(
     // The first turn of the segment now carries the summary.
     segmentSummary: null,
     external,
+    memoriesSent,
     updatedAt: deps.clock.now(),
     version: conversation.version + 1,
   }

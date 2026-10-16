@@ -36,3 +36,16 @@ export {
   type SendMessageRequest,
   type SendMessageResult,
 } from './conversation/turn'
+export {
+  MEMORY_LIMITS,
+  createRememberTool,
+  listMemories,
+  addMemory,
+  editMemory,
+  setMemoryArchived,
+  deleteMemory,
+  forgetEverywhere,
+  forgetAll,
+  deleteConversation,
+  type MemoryPageResult,
+} from './conversation/memory'

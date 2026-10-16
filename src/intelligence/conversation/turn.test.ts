@@ -72,6 +72,7 @@ function makeProfile(tools: ConversationTool[], overrides: Partial<ConversationP
       ...overrides,
     },
     budget: { monthlyUsd: 6, dailyUsd: 0.6 },
+    memory: false,
     allowedRoles: ['member'],
   }
 }
