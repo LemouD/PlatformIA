@@ -11,6 +11,7 @@ import type { UserClients } from './clients'
 import { summarizeSegment } from './compaction'
 import { buildUserMessage, callSize, dataTag, dateLine, toolSpecs } from './context'
 import { activeMemories, memoryBlock, memoryChanges } from './memory'
+import { handleWrite, markReported, unreportedDecisions } from './pending'
 import type {
   ChatRequest,
   ChatResult,
@@ -19,6 +20,7 @@ import type {
   ConversationTool,
   PrivateSpace,
   Session,
+  ToolContext,
   ToolEffect,
   TurnRecord,
   UsageLedger,
@@ -183,6 +185,8 @@ async function runTurn(
   const turnExternal = media.length > 0 || pastedParts.length > 0
   let conversation: ConversationRecord = initial
   let external = conversation.external || turnExternal
+  const externalSource: ToolContext['externalSource'] =
+    media.length > 0 ? 'piece_jointe' : pastedParts.length > 0 ? 'texte_colle' : 'contenu_externe'
 
   // 3. Long segment: summary first, then a new segment that replays nothing of the old one.
   let history = await deps.space.turns.listSegment(conversation.id, conversation.segment)
@@ -212,6 +216,9 @@ async function runTurn(
       ? [dataTag('resume', { origine: conversation.external ? 'externe' : 'utilisatrice' }, conversation.segmentSummary)]
       : []
   const notes = [dateLine(deps.clock.now(), deps.settings.timeZone)]
+  // Her answers to pending actions since the last turn, announced once.
+  const decisions = await unreportedDecisions(deps.space, conversation.id, deps.clock.now())
+  notes.push(...decisions.lines)
   let memoriesSent = conversation.memoriesSent
   if (profile.memory) {
     const memories = await activeMemories(deps.space)
@@ -331,23 +338,35 @@ async function runTurn(
         results.push(reply('Arguments invalides.', true))
         continue
       }
-      if (tool.writes && writes >= limits.writesPerTurn) {
+      if (tool.kind !== 'read' && writes >= limits.writesPerTurn) {
         results.push(reply('Limite d’écritures atteinte pour ce message.', true))
         continue
       }
-      if (tool.writes) writes += 1
+      // Built for each call: `external` may have changed during this round (spec 10.3).
+      const ctx: ToolContext = {
+        space: deps.space,
+        conversationId: conversation.id,
+        external,
+        externalSource,
+        now: deps.clock.now(),
+        newId: deps.newId,
+        timeZone: deps.settings.timeZone,
+      }
       try {
-        const outcome = await tool.run(
-          { space: deps.space, session, conversation, external, now: deps.clock.now() },
-          block.input,
-        )
-        // Marked before any later write of this round runs (spec 10.3).
-        if (outcome.readsExternal) external = true
-        for (const effect of outcome.effects ?? []) {
-          if (effect.type === 'done') done.push(effect)
-          else pending.push(effect)
+        if (tool.kind === 'read') {
+          const outcome = await tool.run(ctx, block.input)
+          // Marked before any later write of this round runs.
+          if (outcome.readsExternal) external = true
+          results.push(reply(outcome.content, outcome.isError === true))
+        } else {
+          writes += 1
+          const outcome = await handleWrite(tool, ctx, block.input)
+          for (const effect of outcome.effects) {
+            if (effect.type === 'done') done.push(effect)
+            else pending.push(effect)
+          }
+          results.push(reply(outcome.content, outcome.isError))
         }
-        results.push(reply(outcome.content, outcome.isError === true))
       } catch {
         await auditSecurity(deps, session, profile, 'tool_error')
         results.push(reply('Erreur interne de l’outil.', true))
@@ -383,6 +402,7 @@ async function runTurn(
     version: conversation.version + 1,
   }
   if (!(await deps.space.conversations.compareAndSet(conversation.id, conversation.version, next))) return fail('conflict')
+  await markReported(deps.space, decisions.records, deps.clock.now())
 
   const lastAssistant = [...appended].reverse().find((m) => m.role === 'assistant' && textOf(m).trim() !== '')
   let reply = stoppedBy === 'refusal' ? REFUSAL_REPLY : stripInvisible(lastAssistant ? textOf(lastAssistant) : '').value.trim()

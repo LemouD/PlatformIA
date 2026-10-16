@@ -74,52 +74,48 @@ const REMEMBER_SCHEMA = {
 
 /**
  * `retenir`: the code, not the model, decides what happens to a proposed memory (spec 8.1).
- * In a conversation marked external, nothing is written until the confirmation flow of PR 3 exists.
+ * Stored at once in a clean conversation; in a conversation marked external, it waits for her Oui
+ * and keeps an external origin.
  */
-export function createRememberTool(newId: () => string): ConversationTool {
-  return {
-    name: 'retenir',
-    description:
-      'Retient un fait utile et durable sur l’utilisatrice (préférence, situation, objectif). Pas un journal : un souvenir court.',
-    inputSchema: REMEMBER_SCHEMA,
-    writes: true,
-    async run(ctx, args) {
-      if (ctx.external) {
-        return {
-          content: 'Non retenu : cette conversation contient un contenu externe, un souvenir y demande sa confirmation.',
-          isError: true,
-        }
-      }
-      const cleaned = cleanMemoryText((args as { texte: string }).texte)
-      if (!cleaned.ok) {
-        return { content: cleaned.reason === 'empty' ? 'Souvenir vide.' : 'Souvenir trop long (300 caractères au plus).', isError: true }
-      }
-      const active = await activeMemories(ctx.space)
-      if (active.some((m) => m.text === cleaned.text)) return { content: 'Déjà retenu.' }
-      const room = await makeRoom(ctx.space, ctx.now)
-      if (room === null) return { content: 'Mémoire pleine : elle doit d’abord en supprimer sur sa page.', isError: true }
-      const memory: MemoryRecord = {
-        id: newId(),
-        text: cleaned.text,
-        origin: 'utilisatrice',
-        source: 'message',
-        conversationId: ctx.conversation.id,
-        archived: false,
-        editedByUser: false,
-        createdAt: ctx.now,
-        updatedAt: ctx.now,
-        version: 1,
-      }
-      await ctx.space.memories.insert(memory)
-      const effects: NonNullable<Awaited<ReturnType<ConversationTool['run']>>['effects']> = [
-        { type: 'done', actionId: memory.id, kind: 'souvenir', undoable: true, label: `Retenu : ${memory.text}` },
-      ]
-      if (room !== 'room') {
-        effects.push({ type: 'done', actionId: room.id, kind: 'souvenir_archive', undoable: false, label: `Archivé : ${room.text}` })
-      }
-      return { content: 'Retenu.', effects }
-    },
-  }
+export const rememberTool: ConversationTool = {
+  name: 'retenir',
+  description: 'Retient un fait utile et durable sur l’utilisatrice (préférence, situation, objectif). Pas un journal : un souvenir court.',
+  inputSchema: REMEMBER_SCHEMA,
+  kind: 'add',
+  async plan(ctx, args) {
+    const cleaned = cleanMemoryText((args as { texte: string }).texte)
+    if (!cleaned.ok) return { error: cleaned.reason === 'empty' ? 'Souvenir vide.' : 'Souvenir trop long (300 caractères au plus).' }
+    const active = await activeMemories(ctx.space)
+    if (active.some((m) => m.text === cleaned.text)) return { error: 'Déjà retenu.' }
+    if (active.length >= MEMORY_LIMITS.maxActive && active.every((m) => m.editedByUser)) {
+      return { error: 'Mémoire pleine : elle doit d’abord en supprimer sur sa page.' }
+    }
+    return { preview: `Retenir : ${cleaned.text}`, target: null }
+  },
+  async apply(ctx, args, origin) {
+    const cleaned = cleanMemoryText((args as { texte: string }).texte)
+    if (!cleaned.ok) return { error: 'Souvenir invalide.' }
+    const room = await makeRoom(ctx.space, ctx.now)
+    if (room === null) return { error: 'Mémoire pleine.' }
+    const memory: MemoryRecord = {
+      id: ctx.newId(),
+      text: cleaned.text,
+      origin,
+      source: origin === 'externe' ? ctx.externalSource : 'message',
+      conversationId: ctx.conversationId,
+      archived: false,
+      editedByUser: false,
+      createdAt: ctx.now,
+      updatedAt: ctx.now,
+      version: 1,
+    }
+    await ctx.space.memories.insert(memory)
+    return {
+      created: [{ repo: 'memories', id: memory.id, version: memory.version }],
+      label: `Retenu : ${memory.text}`,
+      notes: room === 'room' ? [] : [`Archivé pour faire de la place : ${room.text}`],
+    }
+  },
 }
 
 // Functions of the "Ce dont Nana se souvient" page. Called by her through the interface, never by the model.

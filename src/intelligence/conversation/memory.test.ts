@@ -6,7 +6,6 @@ import { createUserBudgets } from './budget'
 import {
   MEMORY_LIMITS,
   addMemory,
-  createRememberTool,
   deleteConversation,
   deleteMemory,
   editMemory,
@@ -14,6 +13,7 @@ import {
   forgetEverywhere,
   listMemories,
   memoryChanges,
+  rememberTool,
   setMemoryArchived,
 } from './memory'
 import { sendMessage, startConversation, type ConversationDeps } from './turn'
@@ -28,7 +28,7 @@ function setup() {
     model: 'claude-sonnet-5-5',
     effort: 'low',
     systemPrompt: 'Tu es une assistante de test.',
-    tools: [createRememberTool(newId)],
+    tools: [rememberTool],
     limits: {
       pastedThresholdChars: 1000,
       textMaxChars: 20000,
@@ -178,7 +178,7 @@ describe('retenir', () => {
     const result = await sendMessage(deps, SESSION, { conversationId: id, text: 'Retiens', expectedTurnCount: 0 })
     expect((await space.memories.get('m1'))?.archived).toBe(true)
     expect((await space.memories.get('edited'))?.archived).toBe(false)
-    expect(result.ok && result.done.map((d) => d.kind)).toEqual(['souvenir', 'souvenir_archive'])
+    expect(result.ok && result.done.map((d) => d.kind)).toEqual(['retenir', 'retenir_note'])
   })
 })
 

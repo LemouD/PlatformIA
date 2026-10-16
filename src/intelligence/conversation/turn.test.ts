@@ -31,7 +31,7 @@ function makeTools(state: { externalNotes: boolean; writes: ToolContext[] }): Co
       name: 'lire_notes',
       description: 'Lit les notes.',
       inputSchema: noteSchema,
-      writes: false,
+      kind: 'read',
       async run() {
         return { content: 'Note : acheter du pain.', readsExternal: state.externalNotes }
       },
@@ -40,12 +40,13 @@ function makeTools(state: { externalNotes: boolean; writes: ToolContext[] }): Co
       name: 'ajouter_note',
       description: 'Ajoute une note.',
       inputSchema: noteSchema,
-      writes: true,
-      async run(ctx) {
+      kind: 'add',
+      async plan(ctx) {
         state.writes.push(ctx)
-        return ctx.external
-          ? { content: 'En attente de confirmation.', effects: [{ type: 'pending', pendingId: 'p1', kind: 'note', preview: 'Ajouter une note' }] }
-          : { content: 'Note ajoutée.', effects: [{ type: 'done', actionId: 'a1', kind: 'note', undoable: true, label: 'Note ajoutée' }] }
+        return { preview: 'Ajouter une note', target: null }
+      },
+      async apply() {
+        return { created: [], label: 'Note ajoutée' }
       },
     },
   ]

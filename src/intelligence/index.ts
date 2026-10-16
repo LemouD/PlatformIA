@@ -38,7 +38,7 @@ export {
 } from './conversation/turn'
 export {
   MEMORY_LIMITS,
-  createRememberTool,
+  rememberTool,
   listMemories,
   addMemory,
   editMemory,
@@ -49,3 +49,5 @@ export {
   deleteConversation,
   type MemoryPageResult,
 } from './conversation/memory'
+export * from './conversation/records'
+export { resolvePending, undoAction, purgeExpired, type PendingDeps, type ResolveResult, type UndoResult } from './conversation/pending'

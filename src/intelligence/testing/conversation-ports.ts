@@ -5,8 +5,17 @@ import type {
   ChatResult,
   ConversationRecord,
   ConversationRepo,
+  DraftRecord,
+  EventRecord,
+  ListItemRecord,
+  ListRecord,
   MemoryRecord,
-  MemoryRepo,
+  NoteRecord,
+  PendingActionRecord,
+  RecordRepo,
+  ReminderRecord,
+  StoredRecord,
+  UndoRecord,
   PrivateSpace,
   TurnRecord,
   TurnRepo,
@@ -60,21 +69,22 @@ export class MemoryTurnRepo implements TurnRepo {
   }
 }
 
-export class MemoryMemoryRepo implements MemoryRepo {
-  readonly records = new Map<string, MemoryRecord>()
+/** Generic record store with an atomic compareAndSet, like the SQLite tables of the server. */
+export class MemoryRecordRepo<T extends StoredRecord> implements RecordRepo<T> {
+  readonly records = new Map<string, T>()
 
-  async list(): Promise<MemoryRecord[]> {
+  async list(): Promise<T[]> {
     return [...this.records.values()].map(copy)
   }
-  async get(id: string): Promise<MemoryRecord | null> {
+  async get(id: string): Promise<T | null> {
     const record = this.records.get(id)
     return record ? copy(record) : null
   }
-  async insert(record: MemoryRecord): Promise<void> {
-    if (this.records.has(record.id)) throw new Error(`duplicate memory ${record.id}`)
+  async insert(record: T): Promise<void> {
+    if (this.records.has(record.id)) throw new Error(`duplicate record ${record.id}`)
     this.records.set(record.id, copy(record))
   }
-  async compareAndSet(id: string, expectedVersion: number, next: MemoryRecord): Promise<boolean> {
+  async compareAndSet(id: string, expectedVersion: number, next: T): Promise<boolean> {
     const current = this.records.get(id)
     if (!current || current.version !== expectedVersion) return false
     this.records.set(id, copy(next))
@@ -89,7 +99,15 @@ export class MemoryMemoryRepo implements MemoryRepo {
 export class MemoryPrivateSpace implements PrivateSpace {
   readonly conversations = new MemoryConversationRepo()
   readonly turns = new MemoryTurnRepo()
-  readonly memories = new MemoryMemoryRepo()
+  readonly memories = new MemoryRecordRepo<MemoryRecord>()
+  readonly lists = new MemoryRecordRepo<ListRecord>()
+  readonly listItems = new MemoryRecordRepo<ListItemRecord>()
+  readonly events = new MemoryRecordRepo<EventRecord>()
+  readonly notes = new MemoryRecordRepo<NoteRecord>()
+  readonly drafts = new MemoryRecordRepo<DraftRecord>()
+  readonly reminders = new MemoryRecordRepo<ReminderRecord>()
+  readonly pending = new MemoryRecordRepo<PendingActionRecord>()
+  readonly undo = new MemoryRecordRepo<UndoRecord>()
 }
 
 export class MemoryUsageLedger implements UsageLedger {
