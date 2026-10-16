@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
+import { agentHref } from '@/config/navigation'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
@@ -21,7 +22,7 @@ export function NovaCore({ agent, rect }: NovaCoreProps) {
 
   return (
     <Link
-      href={`/agents/${agent.id}`}
+      href={agentHref(agent.id)}
       aria-label={`${agent.name}, orchestrator, ${paused ? 'paused' : meta.description}`}
       className="absolute block rounded-card"
       style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}

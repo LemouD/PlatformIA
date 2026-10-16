@@ -4,6 +4,7 @@ import { ChevronRight, ListChecks, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
+import { agentHref } from '@/config/navigation'
 import { STATUS_META } from '@/design/status'
 import type { Task, TaskStatus } from '@/domain/events'
 import type { Agent } from '@/domain/types'
@@ -151,7 +152,7 @@ export function TasksView() {
                   <Link
                     key={task.id}
                     role="row"
-                    href={`/agents/${task.agentId}`}
+                    href={agentHref(task.agentId)}
                     className="grid h-16 grid-cols-[minmax(0,400px)_minmax(0,1fr)_170px_180px_110px_90px_24px] items-center gap-4 border-b border-line px-4 hover:bg-surface"
                   >
                     <span role="cell" className="truncate text-sm text-ink">{task.title}</span>
@@ -171,7 +172,7 @@ export function TasksView() {
                 {visible.map((task) => (
                   <li key={task.id}>
                     <Link
-                      href={`/agents/${task.agentId}`}
+                      href={agentHref(task.agentId)}
                       className={`flex flex-col gap-2 rounded-[14px] border bg-surface p-3 ${
                         task.status === 'waiting_approval' ? 'border-warning' : 'border-line'
                       }`}
