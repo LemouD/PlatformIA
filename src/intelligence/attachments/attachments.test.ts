@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib'
 import { describe, expect, it } from 'vitest'
-import { countPdfPages } from './pdf'
+import { countPdfPages, runPdfWorker } from './pdf'
 import { prepareAttachment } from './prepare'
 import { sniffType } from './sniff'
 import { stripJpegMetadata, stripPngMetadata } from './strip-metadata'
@@ -88,7 +88,10 @@ describe('countPdfPages', () => {
     expect(await countPdfPages(await pdfWithPages(3))).toBe(3)
   })
   it('gives up when the worker exceeds its deadline', { timeout: PDF_TEST_TIMEOUT_MS }, async () => {
-    await expect(countPdfPages(await pdfWithPages(1), { timeoutMs: 1, maxHeapMb: 128 })).rejects.toThrow('timeout')
+    // A worker that says it is ready, then never answers: only the deadline can end it, whatever the machine speed.
+    // The empty listener keeps the worker alive, as pdf-lib would while it parses.
+    const silent = "const { parentPort } = require('node:worker_threads'); parentPort.on('message', () => {}); parentPort.postMessage({ ready: true })"
+    await expect(runPdfWorker(silent, await pdfWithPages(1), { timeoutMs: 50, maxHeapMb: 128 })).rejects.toThrow('timeout')
   })
   it('rejects garbage behind a PDF signature', { timeout: PDF_TEST_TIMEOUT_MS }, async () => {
     await expect(countPdfPages(new Uint8Array(ascii('%PDF-1.7 rien du tout')))).rejects.toThrow()

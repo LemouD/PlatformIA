@@ -27,8 +27,13 @@ const STARTUP_TIMEOUT_MS = 30_000
 
 /** Resolves with the page count; rejects on an unreadable or encrypted PDF, a timeout or a memory overrun. */
 export function countPdfPages(bytes: Uint8Array, limits: PdfLimits = DEFAULT_PDF_LIMITS): Promise<number> {
+  return runPdfWorker(WORKER_SOURCE, bytes, limits)
+}
+
+/** Exported for tests only: a worker that never answers makes the deadline test deterministic. */
+export function runPdfWorker(source: string, bytes: Uint8Array, limits: PdfLimits): Promise<number> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(WORKER_SOURCE, {
+    const worker = new Worker(source, {
       eval: true,
       resourceLimits: { maxOldGenerationSizeMb: limits.maxHeapMb, maxYoungGenerationSizeMb: 32 },
     })
