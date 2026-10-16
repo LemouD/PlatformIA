@@ -4,6 +4,7 @@ import { ChevronRight, ListChecks, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
+import { LastKnownTag } from '@/components/ui/LastKnownTag'
 import { agentHref } from '@/config/navigation'
 import { STATUS_META } from '@/design/status'
 import type { Task, TaskStatus } from '@/domain/events'
@@ -11,7 +12,7 @@ import type { Agent } from '@/domain/types'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
 import { formatClockTime } from '@/lib/format'
 import { useNow } from '@/lib/useNow'
-import { useSystemState } from '@/store/SystemProvider'
+import { useLastKnownAt, useSystemState } from '@/store/SystemProvider'
 import { countByStatus, formatDuration, sortTasks, TASK_STATUS_META, TASK_STATUSES } from './task-view'
 
 type Filter = 'all' | TaskStatus
@@ -67,6 +68,8 @@ const ASK_NOVA = 'flex h-11 items-center gap-2 rounded-control bg-accent px-4 te
 /** Every task born from a command, most urgent first (agents design spec 15.1). */
 export function TasksView() {
   const state = useSystemState()
+  // While the stream is cut, rows keep their last known state at 85 % (spec 15.4).
+  const stale = useLastKnownAt() === null ? '' : 'opacity-85'
   const now = useNow(1000)
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -84,6 +87,7 @@ export function TasksView() {
             {state.tasks.length} tasks · {counts.running} running · {counts.waiting_approval} waiting for you
           </p>
           <h1 className="font-display text-[28px] leading-none italic text-ink md:text-[40px]">Tasks</h1>
+          <LastKnownTag />
         </div>
         <Link href="/" className={`${ASK_NOVA} max-md:hidden`}>
           <Sparkles aria-hidden size={16} />
@@ -138,7 +142,7 @@ export function TasksView() {
             </p>
           ) : (
             <>
-              <div role="table" aria-label="Tasks" className="max-md:hidden">
+              <div role="table" aria-label="Tasks" className={`max-md:hidden ${stale}`}>
                 <div role="row" className="grid grid-cols-[minmax(0,400px)_minmax(0,1fr)_170px_180px_110px_90px_24px] gap-4 border-b border-line px-4 pb-2 font-mono text-[10px] uppercase text-ink-muted">
                   <span role="columnheader">Task</span>
                   <span role="columnheader">Agent</span>
@@ -168,7 +172,7 @@ export function TasksView() {
                 ))}
               </div>
 
-              <ul className="flex flex-col gap-2 md:hidden">
+              <ul className={`flex flex-col gap-2 md:hidden ${stale}`}>
                 {visible.map((task) => (
                   <li key={task.id}>
                     <Link

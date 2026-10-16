@@ -2,7 +2,8 @@
 
 import { Pause, ScrollText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSystemState } from '@/store/SystemProvider'
+import { LastKnownTag } from '@/components/ui/LastKnownTag'
+import { useLastKnownAt, useSystemState } from '@/store/SystemProvider'
 import { filterLogs, formatLogTime, isAtBottom, LEVEL_FILTERS, LEVEL_META } from './log-view'
 import type { LevelFilter } from './log-view'
 
@@ -11,6 +12,8 @@ const CONTROL = 'h-10 rounded-control border border-line-control bg-surface-sunk
 /** Live, filterable system logs with auto-scroll that pauses when the user scrolls up (spec 15.2). */
 export function LogsView() {
   const state = useSystemState()
+  // While the stream is cut, lines keep their last known state at 85 % (spec 15.4).
+  const stale = useLastKnownAt() === null ? '' : 'opacity-85'
   const [level, setLevel] = useState<LevelFilter>('all')
   const [agentId, setAgentId] = useState('all')
   const [text, setText] = useState('')
@@ -54,6 +57,7 @@ export function LogsView() {
         <div className="flex flex-col gap-2">
           <p className="font-mono text-[10px] uppercase text-info">{state.logs.length} lines kept</p>
           <h1 className="font-display text-[28px] leading-none italic text-ink md:text-[40px]">Logs</h1>
+          <LastKnownTag />
         </div>
         <p
           aria-live="polite"
@@ -122,7 +126,7 @@ export function LogsView() {
             ref={stream}
             onScroll={onScroll}
             aria-label="Log lines"
-            className="h-[calc(100dvh-300px)] min-h-[320px] overflow-y-auto rounded-panel border border-line bg-surface-sunken p-2 font-mono text-xs tabular-nums"
+            className={`h-[calc(100dvh-300px)] min-h-[320px] overflow-y-auto rounded-panel border border-line bg-surface-sunken p-2 font-mono text-xs tabular-nums ${stale}`}
           >
             {lines.map((line) => {
               const meta = LEVEL_META[line.level]
