@@ -1,3 +1,5 @@
+// Server only: importing this from code a browser could load fails the build.
+import 'server-only'
 export * from './definitions/types'
 export * from './records'
 export type * from './ports'

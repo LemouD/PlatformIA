@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { checkRequest, contentSecurityPolicy, policyFromEnv } from '@/server/security/request-policy'
+import { checkRequest, contentSecurityPolicy, isBuiltAsset, policyFromEnv } from '@/server/security/request-policy'
 
 const policy = policyFromEnv({ PORT: process.env.PORT, AI_OS_EXTRA_HOSTS: process.env.AI_OS_EXTRA_HOSTS })
 const development = process.env.NODE_ENV === 'development'
-
-/** Built assets and public files: checked for Host, but no page, so no nonce to hand out. */
-function isAsset(pathname: string): boolean {
-  return pathname.startsWith('/_next/static/') || pathname.startsWith('/_next/image') || /\.[a-z0-9]+$/i.test(pathname)
-}
 
 /**
  * Runs before every request (threat model L1, M1): unknown Host, foreign Origin or a form body
@@ -32,7 +27,7 @@ export function proxy(request: NextRequest) {
     })
   }
 
-  if (isAsset(request.nextUrl.pathname)) return NextResponse.next()
+  if (isBuiltAsset(request.nextUrl.pathname)) return NextResponse.next()
 
   const nonce = btoa(crypto.randomUUID())
   const csp = contentSecurityPolicy(nonce, development)

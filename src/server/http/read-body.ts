@@ -1,3 +1,5 @@
+import 'server-only'
+
 /**
  * Reads a request body without trusting Content-Length, which a client can fake: bytes are
  * counted as they arrive and reading stops at the first byte over the cap. Every route sets

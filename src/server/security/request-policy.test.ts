@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkRequest, contentSecurityPolicy, policyFromEnv } from './request-policy'
+import { checkRequest, contentSecurityPolicy, isBuiltAsset, policyFromEnv } from './request-policy'
 
 const policy = policyFromEnv({ PORT: '3000', AI_OS_EXTRA_HOSTS: 'pc-maison.tail1234.ts.net' })
 const post = (overrides: Partial<Parameters<typeof checkRequest>[0]> = {}) =>
@@ -57,6 +57,16 @@ describe('requests that change something (cross-site)', () => {
     expect(post({ contentType: null })?.status).toBe(415)
     expect(post({ contentType: 'application/json; charset=utf-8' })).toBeNull()
     expect(post({ method: 'DELETE', contentType: 'multipart/form-data; boundary=x' })).toBeNull()
+  })
+})
+
+describe('built assets', () => {
+  it('skips the CSP only under /_next/static and /_next/image, whatever the extension', () => {
+    expect(isBuiltAsset('/_next/static/chunks/app.js')).toBe(true)
+    expect(isBuiltAsset('/_next/image?url=x')).toBe(true)
+    expect(isBuiltAsset('/agents/x.json')).toBe(false)
+    expect(isBuiltAsset('/agents/a.b')).toBe(false)
+    expect(isBuiltAsset('/icon.svg')).toBe(false)
   })
 })
 

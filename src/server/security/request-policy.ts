@@ -1,3 +1,5 @@
+import 'server-only'
+
 /**
  * Checks every request against the threat model (modele-de-menaces-plateforme.md, L1 and L8):
  * a fixed list of Host headers stops DNS rebinding, a known Origin and a non-form body stop
@@ -24,7 +26,11 @@ export interface Refusal {
 }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
-/** An HTML form from another site cannot send these without a CORS preflight, which we never answer. */
+/**
+ * Bodies a route may accept. JSON needs a CORS preflight, which we never answer; multipart does
+ * NOT: an HTML form on another site can send it without one. What stops that cross-site request
+ * is the Origin check above, then the SameSite=Strict session cookie. Never remove the Origin check.
+ */
 const BODY_TYPES = ['application/json', 'multipart/form-data']
 const HOST_NAME = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/
 
@@ -63,6 +69,14 @@ export function checkRequest(request: RequestFacts, policy: RequestPolicy): Refu
     return { status: 415, reason: 'body must be JSON or multipart' }
   }
   return null
+}
+
+/**
+ * Built assets: checked for Host, but never a page, so they get no CSP nonce. Matched by prefix
+ * only: a rule on file extensions would serve /agents/x.json without a CSP.
+ */
+export function isBuiltAsset(pathname: string): boolean {
+  return pathname.startsWith('/_next/static/') || pathname.startsWith('/_next/image')
 }
 
 /**

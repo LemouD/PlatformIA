@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url'
 const SRC = new URL('../src/', import.meta.url)
 
 export async function resolve(specifier, context, nextResolve) {
+  // The terminal launcher runs on the server side: resolve the marker like Next's server layer does.
+  if (specifier === 'server-only') {
+    return nextResolve(specifier, { ...context, conditions: [...context.conditions, 'react-server'] })
+  }
   let target
   if (specifier.startsWith('@/')) target = new URL(specifier.slice(2), SRC).href
   else if ((specifier.startsWith('./') || specifier.startsWith('../')) && context.parentURL) {
