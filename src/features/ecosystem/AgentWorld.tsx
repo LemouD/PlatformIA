@@ -8,6 +8,7 @@ import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
 import { AgentRobot } from '@/features/agents/robot/AgentRobot'
+import { useStreamFrozen } from '@/store/SystemProvider'
 import { AgentEnvironment } from './AgentEnvironment'
 import type { Rect } from './orbit'
 import { TERRITORY_HEIGHT, TERRITORY_WIDTH } from './orbit'
@@ -29,7 +30,8 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
   const [walking, setWalking] = useState(false)
   const [facing, setFacing] = useState<'left' | 'right'>('left')
   const paused = agent.availability === 'paused'
-  const wanders = agent.status === 'IDLE' && !paused && !reduced
+  const frozen = useStreamFrozen()
+  const wanders = agent.status === 'IDLE' && !paused && !frozen && !reduced
 
   useEffect(() => {
     if (!wanders) return

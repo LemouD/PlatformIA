@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AgentEvent, AgentEventInput } from '@/domain/events'
 import { mockAgents } from '@/mocks/agents'
-import { applyEvent, createInitialState, LIMITS } from './system-state'
+import { applyConnection, applyEvent, createInitialState, LIMITS } from './system-state'
 import type { SystemState } from './system-state'
 
 const METRICS = { runningTasks: 0, apiUptime: 100, tokens: 0, costTodayUsd: 0 }
@@ -174,5 +174,23 @@ describe('availability', () => {
     expect(again.agents.find((agent) => agent.id === 'coding')?.pausedAt).toBe(5_000)
     const resumed = applyEvent(again, event({ type: 'agent.availability_changed', agentId: 'coding', availability: 'online', at: 12_000 }))
     expect(resumed.agents.find((agent) => agent.id === 'coding')).toMatchObject({ availability: 'online', pausedAt: null })
+  })
+})
+
+describe('connection', () => {
+  it('degrades the system while the stream is cut and keeps when the cut began', () => {
+    const cut = applyConnection(initial(), { status: 'interrupted', retryAt: 15_000 }, 10_000)
+    expect(cut.health).toBe('degraded')
+    expect(cut.connection).toEqual({ status: 'interrupted', since: 10_000, retryAt: 15_000 })
+    const retrying = applyConnection(cut, { status: 'interrupted', retryAt: 25_000 }, 15_000)
+    expect(retrying.connection).toEqual({ status: 'interrupted', since: 10_000, retryAt: 25_000 })
+    const back = applyConnection(retrying, { status: 'live' }, 18_000)
+    expect(back.health).toBe('nominal')
+    expect(back.connection).toEqual({ status: 'live' })
+  })
+
+  it('changes nothing when the stream was already live', () => {
+    const state = initial()
+    expect(applyConnection(state, { status: 'live' }, 1_000)).toBe(state)
   })
 })

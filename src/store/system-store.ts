@@ -1,12 +1,14 @@
 import type { AgentEvent } from '@/domain/events'
 import { COMPLETED_HOLD_MS } from '@/domain/state-machine'
+import type { ConnectionState } from '@/events/source'
 import type { Scheduler } from './scheduler'
-import { applyEvent } from './system-state'
+import { applyConnection, applyEvent } from './system-state'
 import type { SystemState } from './system-state'
 
 export interface SystemStore {
   getState(): SystemState
   dispatch(event: AgentEvent): void
+  setConnection(connection: ConnectionState): void
   subscribe(listener: () => void): () => void
   dispose(): void
 }
@@ -45,9 +47,17 @@ export function createSystemStore(initial: SystemState, scheduler: Scheduler): S
     listeners.forEach((listener) => listener())
   }
 
+  function setConnection(connection: ConnectionState) {
+    const next = applyConnection(state, connection, scheduler.now())
+    if (next === state) return
+    state = next
+    listeners.forEach((listener) => listener())
+  }
+
   return {
     getState: () => state,
     dispatch,
+    setConnection,
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)

@@ -2,7 +2,15 @@ import type { AgentEvent, AgentEventInput, Approval } from '@/domain/events'
 import { commandScenario, decisionScenario } from '@/mocks/scenarios'
 import type { ScenarioStep } from '@/mocks/scenarios'
 import type { Scheduler } from '@/store/scheduler'
-import type { AgentEventSource, ApprovalDecision } from './source'
+import type { AgentEventSource, ApprovalDecision, ConnectionState } from './source'
+
+/** Delay before the mock tries to reconnect after an outage, like the server source will. */
+export const MOCK_RETRY_MS = 5000
+
+export interface MockEventSource extends AgentEventSource {
+  /** Simulates a cut of the live stream; it comes back on its own after MOCK_RETRY_MS. */
+  interrupt(): void
+}
 
 /** Scenarios are written without times; the source dates each payload when it emits it. */
 export function stampTimes(event: AgentEventInput, at: number): AgentEventInput {
@@ -33,11 +41,17 @@ export function stampTimes(event: AgentEventInput, at: number): AgentEventInput 
 export function createMockEventSource(
   scheduler: Scheduler,
   options: { pendingApprovals?: readonly Approval[] } = {},
-): AgentEventSource {
+): MockEventSource {
   const listeners = new Set<(event: AgentEvent) => void>()
+  const connectionListeners = new Set<(connection: ConnectionState) => void>()
   const timers = new Set<unknown>()
   const approvalAgents = new Map<string, string>()
   let counter = 0
+  let connection: ConnectionState = { status: 'live' }
+  let retryTimer: unknown = null
+  // While the stream is cut, events wait here and the user's actions wait to be sent.
+  let heldEvents: AgentEvent[] = []
+  let heldActions: (() => void)[] = []
 
   const nextId = (prefix: string) => {
     counter += 1
@@ -45,7 +59,34 @@ export function createMockEventSource(
   }
 
   function emit(event: AgentEvent) {
+    if (connection.status === 'interrupted') {
+      heldEvents.push(event)
+      return
+    }
     listeners.forEach((listener) => listener(event))
+  }
+
+  function setConnection(next: ConnectionState) {
+    connection = next
+    connectionListeners.forEach((listener) => listener(next))
+  }
+
+  function whenLive(action: () => void) {
+    if (connection.status === 'interrupted') heldActions.push(action)
+    else action()
+  }
+
+  function reconnect() {
+    if (connection.status === 'live') return
+    if (retryTimer !== null) scheduler.clearTimeout(retryTimer)
+    retryTimer = null
+    setConnection({ status: 'live' })
+    const events = heldEvents
+    const actions = heldActions
+    heldEvents = []
+    heldActions = []
+    events.forEach(emit)
+    actions.forEach((action) => action())
   }
 
   function play(steps: readonly ScenarioStep[]) {
@@ -71,22 +112,38 @@ export function createMockEventSource(
       }
       return () => listeners.delete(listener)
     },
+    subscribeConnection(listener) {
+      connectionListeners.add(listener)
+      listener(connection)
+      return () => connectionListeners.delete(listener)
+    },
+    reconnect,
+    interrupt() {
+      if (connection.status === 'interrupted') return
+      const retryAt = scheduler.now() + MOCK_RETRY_MS
+      retryTimer = scheduler.setTimeout(reconnect, MOCK_RETRY_MS)
+      setConnection({ status: 'interrupted', retryAt })
+    },
     submitCommand(command) {
-      play(commandScenario(command, { task: nextId('task'), execution: nextId('exec'), handoff: nextId('handoff') }))
+      whenLive(() =>
+        play(commandScenario(command, { task: nextId('task'), execution: nextId('exec'), handoff: nextId('handoff') })),
+      )
     },
     decide(approvalId: string, decision: ApprovalDecision) {
       const agentId = approvalAgents.get(approvalId)
       if (!agentId) return
       approvalAgents.delete(approvalId)
-      play(decisionScenario(agentId, approvalId, decision))
+      whenLive(() => play(decisionScenario(agentId, approvalId, decision)))
     },
     setAvailability(agentId, availability) {
-      play([{ delayMs: 200, event: { type: 'agent.availability_changed', agentId, availability } }])
+      whenLive(() => play([{ delayMs: 200, event: { type: 'agent.availability_changed', agentId, availability } }]))
     },
     dispose() {
       timers.forEach((handle) => scheduler.clearTimeout(handle))
       timers.clear()
+      if (retryTimer !== null) scheduler.clearTimeout(retryTimer)
       listeners.clear()
+      connectionListeners.clear()
     },
   }
 }

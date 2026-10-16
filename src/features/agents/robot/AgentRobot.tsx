@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/re
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useId } from 'react'
 import { STATUS_META } from '@/design/status'
+import { useStreamFrozen } from '@/store/SystemProvider'
 import type { AgentStatus, AgentType, EnvironmentKind } from '@/domain/types'
 import { resolveRobotProp, ROBOT_VIEWBOX, robotHeight, SPRING_A, STATE_MOTION } from './robot-model'
 
@@ -101,7 +102,9 @@ export function AgentRobot({
   paused = false,
 }: AgentRobotProps) {
   const reduced = useReducedMotion() ?? false
-  const animated = variant === 'world' && !reduced
+  // A cut live stream freezes every robot in its last pose (spec 15.4).
+  const frozen = useStreamFrozen()
+  const animated = variant === 'world' && !reduced && !frozen
   // A paused robot keeps its status in memory but shows none of it.
   const live = animated && !paused
   const rhythm = STATE_MOTION[status]

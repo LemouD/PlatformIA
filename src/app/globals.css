@@ -85,6 +85,11 @@
   }
 }
 
+/* Live stream cut: panels keep their last known state, rows at 85 % (design spec 15.4). */
+.panel-stale > :not(header) {
+  opacity: 0.85;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
