@@ -4,7 +4,7 @@ import { mockSnapshot } from '@/mocks/snapshot'
 import { createManualScheduler } from '@/store/scheduler'
 import { createInitialState } from '@/store/system-state'
 import { createSystemStore } from '@/store/system-store'
-import { createMockEventSource } from './mock-source'
+import { createMockEventSource, MOCK_RETRY_MS } from './mock-source'
 
 function setup() {
   const scheduler = createManualScheduler(1_000)
@@ -15,6 +15,7 @@ function setup() {
   const store = createSystemStore(createInitialState(agents, mockSnapshot.metrics), scheduler)
   const source = createMockEventSource(scheduler, { pendingApprovals: mockSnapshot.approvals })
   source.subscribe(store.dispatch)
+  source.subscribeConnection(store.setConnection)
   const status = (id: string) => store.getState().agents.find((agent) => agent.id === id)?.status
   return { scheduler, store, source, status }
 }
@@ -68,6 +69,32 @@ describe('mock event source', () => {
     const [record] = Object.values(store.getState().executions)
     expect(record).toMatchObject({ result: 'succeeded', tokens: 2450, costUsd: 0.02 })
     expect(record?.finishedAt).toBeGreaterThan(record?.execution.startedAt ?? Infinity)
+  })
+
+  it('degrades the system during an outage and comes back on its own', () => {
+    const { store, scheduler, source } = setup()
+    source.interrupt()
+    expect(store.getState().health).toBe('degraded')
+    expect(store.getState().connection).toMatchObject({ status: 'interrupted', retryAt: 1_000 + MOCK_RETRY_MS })
+    scheduler.advance(MOCK_RETRY_MS)
+    expect(store.getState().health).toBe('nominal')
+  })
+
+  it('holds events and user actions during an outage, then delivers them', () => {
+    const { store, scheduler, source, status } = setup()
+    source.submitCommand('Turn off the lights')
+    scheduler.advance(100)
+    expect(status('nova')).toBe('THINKING')
+    source.interrupt()
+    source.setAvailability('coding', 'paused')
+    scheduler.advance(3_000)
+    expect(store.getState().handoffs).toHaveLength(0)
+    expect(store.getState().agents.find((agent) => agent.id === 'coding')?.availability).toBe('online')
+    source.reconnect()
+    expect(store.getState().handoffs).toHaveLength(1)
+    scheduler.advance(300)
+    expect(store.getState().agents.find((agent) => agent.id === 'coding')?.availability).toBe('paused')
+    expect(scheduler.pending()).toBeGreaterThan(0)
   })
 
   it('ignores decisions on unknown requests', () => {

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NAV_ITEMS, isNavItemActive } from '@/config/navigation'
 import type { Theme } from '@/config/theme'
 import type { SystemHealth } from '@/domain/types'
+import { useSystemSelector } from '@/store/SystemProvider'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
 const HEALTH_LABEL: Record<SystemHealth, string> = {
@@ -24,8 +25,13 @@ const HEALTH_DOT: Record<SystemHealth, string> = {
   degraded: 'bg-warning',
 }
 
+/** Degraded: dot and outline in the waiting colour (design spec 15.4). */
+const HEALTH_OUTLINE: Record<SystemHealth, string> = {
+  nominal: 'border-transparent',
+  degraded: 'border-warning',
+}
+
 interface TopNavProps {
-  health: SystemHealth
   userInitials: string
   theme: Theme
 }
@@ -99,8 +105,9 @@ function AccountMenu({ initials, theme }: { initials: string; theme: Theme }) {
   )
 }
 
-export function TopNav({ health, userInitials, theme }: TopNavProps) {
+export function TopNav({ userInitials, theme }: TopNavProps) {
   const pathname = usePathname()
+  const health = useSystemSelector((state) => state.health)
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-nav backdrop-blur">
@@ -133,7 +140,9 @@ export function TopNav({ health, userInitials, theme }: TopNavProps) {
         </div>
 
         <div className="flex items-center gap-[11px]">
-          <p className="flex items-center gap-[7px] rounded-full bg-surface px-2.5 py-[7px] font-mono text-[9px] font-semibold uppercase text-ink-soft">
+          <p
+            className={`flex items-center gap-[7px] rounded-full border bg-surface px-2.5 py-[7px] font-mono text-[9px] font-semibold uppercase text-ink-soft ${HEALTH_OUTLINE[health]}`}
+          >
             <span aria-hidden className={`size-1.5 rounded-full ${HEALTH_DOT[health]}`} />
             {HEALTH_LABEL[health]}
           </p>
@@ -153,7 +162,7 @@ export function TopNav({ health, userInitials, theme }: TopNavProps) {
         <Brand />
         <div className="flex items-center gap-2">
           <p
-            className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase text-ink-soft"
+            className={`flex items-center gap-1.5 rounded-full border bg-surface px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase text-ink-soft ${HEALTH_OUTLINE[health]}`}
             aria-label={HEALTH_LABEL[health]}
           >
             <span aria-hidden className={`size-1.5 rounded-full ${HEALTH_DOT[health]}`} />

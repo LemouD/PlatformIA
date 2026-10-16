@@ -18,9 +18,13 @@ interface SystemContextValue {
   submitCommand(command: string): void
   decide(approvalId: string, decision: ApprovalDecision): void
   setAvailability(agentId: string, availability: AgentAvailability): void
+  reconnect(): void
 }
 
 const SystemContext = createContext<SystemContextValue | null>(null)
+
+/** Development aid: open any page with ?simulate=outage to see the stream cut 3 s later. */
+const SIMULATED_OUTAGE_DELAY_MS = 3000
 
 function createSeededStore(): SystemStore {
   const initial = { ...createInitialState(mockAgents, mockSnapshot.metrics), activity: mockSnapshot.activity }
@@ -39,9 +43,19 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const created = createMockEventSource(browserScheduler, { pendingApprovals: mockSnapshot.approvals })
     const unsubscribe = created.subscribe(store.dispatch)
+    const unsubscribeConnection = created.subscribeConnection(store.setConnection)
     source.current = created
+
+    let outage: ReturnType<typeof setTimeout> | undefined
+    const simulate = new URLSearchParams(window.location.search).get('simulate') === 'outage'
+    if (process.env.NODE_ENV !== 'production' && simulate) {
+      outage = setTimeout(() => created.interrupt(), SIMULATED_OUTAGE_DELAY_MS)
+    }
+
     return () => {
+      clearTimeout(outage)
       unsubscribe()
+      unsubscribeConnection()
       created.dispose()
       source.current = null
     }
@@ -54,6 +68,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
     submitCommand: (command) => source.current?.submitCommand(command),
     decide: (approvalId, decision) => source.current?.decide(approvalId, decision),
     setAvailability: (agentId, availability) => source.current?.setAvailability(agentId, availability),
+    reconnect: () => source.current?.reconnect(),
   }))
 
   return <SystemContext.Provider value={value}>{children}</SystemContext.Provider>
@@ -71,7 +86,34 @@ export function useSystemState(): SystemState {
   return useSyncExternalStore(store.subscribe, store.getState, store.getState)
 }
 
+/** One value derived from the state; re-renders the caller only when that value changes. */
+export function useSystemSelector<T extends string | number | boolean | null>(select: (state: SystemState) => T): T {
+  const { store } = useSystemContext()
+  const read = () => select(store.getState())
+  return useSyncExternalStore(store.subscribe, read, read)
+}
+
+const noSubscription = () => () => {}
+
+/** True while the live stream is cut: robots hold their last pose (spec 15.4). False outside the provider. */
+export function useStreamFrozen(): boolean {
+  const value = useContext(SystemContext)
+  const read = () => value?.store.getState().connection.status === 'interrupted'
+  return useSyncExternalStore(value?.store.subscribe ?? noSubscription, read, read)
+}
+
+/** While the stream is cut, the time of the last known state; null when live or outside the provider. */
+export function useLastKnownAt(): number | null {
+  const value = useContext(SystemContext)
+  const read = () => {
+    const state = value?.store.getState()
+    if (!state || state.connection.status === 'live') return null
+    return state.lastEventAt ?? state.connection.since
+  }
+  return useSyncExternalStore(value?.store.subscribe ?? noSubscription, read, read)
+}
+
 export function useSystemActions() {
-  const { submitCommand, decide, setAvailability } = useSystemContext()
-  return { submitCommand, decide, setAvailability }
+  const { submitCommand, decide, setAvailability, reconnect } = useSystemContext()
+  return { submitCommand, decide, setAvailability, reconnect }
 }

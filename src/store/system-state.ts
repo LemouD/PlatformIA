@@ -13,6 +13,9 @@ export interface ExecutionRecord {
   costUsd: number
 }
 
+/** The live stream as the interface sees it; `since` is when the cut began. */
+export type Connection = { status: 'live' } | { status: 'interrupted'; since: number; retryAt: number | null }
+
 /** Everything the interface knows about the system, built only from events. */
 export interface SystemState {
   agents: Agent[]
@@ -24,6 +27,7 @@ export interface SystemState {
   activity: ActivityEntry[]
   metrics: SystemMetrics
   health: SystemHealth
+  connection: Connection
   lastEventAt: number | null
   seenEventIds: string[]
 }
@@ -54,6 +58,7 @@ export function createInitialState(agents: readonly Agent[], metrics: SystemMetr
     activity: [],
     metrics,
     health: 'nominal',
+    connection: { status: 'live' },
     lastEventAt: null,
     seenEventIds: [],
   }
@@ -277,4 +282,18 @@ export function applyEvent(state: SystemState, event: AgentEvent): SystemState {
     lastEventAt: Math.max(state.lastEventAt ?? 0, event.at),
     seenEventIds: keepLast([...state.seenEventIds, event.id], LIMITS.seenEvents),
   }
+}
+
+/** Records a change of the live stream; the system is degraded for as long as it is cut (spec 15.4). */
+export function applyConnection(
+  state: SystemState,
+  connection: { status: 'live' } | { status: 'interrupted'; retryAt: number | null },
+  at: number,
+): SystemState {
+  if (connection.status === 'live') {
+    if (state.connection.status === 'live') return state
+    return { ...state, connection: { status: 'live' }, health: 'nominal' }
+  }
+  const since = state.connection.status === 'interrupted' ? state.connection.since : at
+  return { ...state, connection: { status: 'interrupted', since, retryAt: connection.retryAt }, health: 'degraded' }
 }
