@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
+import { agentHref } from '@/config/navigation'
 import { Panel, PanelHeading } from '@/components/ui/Panel'
 import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
@@ -26,7 +27,7 @@ export function AgentList({ agents }: AgentListProps) {
           return (
             <li key={agent.id}>
               <Link
-                href={`/agents/${agent.id}`}
+                href={agentHref(agent.id)}
                 aria-label={`${agent.name}, ${paused ? 'paused' : meta.description}`}
                 className="flex h-[72px] items-center gap-3 rounded-[14px] bg-surface-sunken px-3"
                 style={{ '--agent-state': meta.color } as CSSProperties}

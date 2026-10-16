@@ -4,6 +4,7 @@ import { Bot } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
+import { agentHref } from '@/config/navigation'
 import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
@@ -24,7 +25,7 @@ function AgentCard({ agent, state, now }: { agent: Agent; state: SystemState; no
   return (
     <li>
       <Link
-        href={`/agents/${agent.id}`}
+        href={agentHref(agent.id)}
         aria-label={`${agent.name}, ${paused ? 'paused' : meta.description}`}
         className="flex h-full flex-col gap-4 rounded-panel border border-line bg-surface p-[18px] shadow-panel transition-colors hover:border-accent focus-visible:border-accent"
         style={{ '--agent-state': meta.color } as CSSProperties}

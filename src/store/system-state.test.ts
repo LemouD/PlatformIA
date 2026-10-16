@@ -194,3 +194,14 @@ describe('connection', () => {
     expect(applyConnection(state, { status: 'live' }, 1_000)).toBe(state)
   })
 })
+
+describe('agent ids', () => {
+  it('refuses an agent whose id could bend a URL', () => {
+    const base = mockAgents[1]!
+    const next = applyEvent(initial(), event({ type: 'agent.registered', agent: { ...base, id: '../x?y#z' } }))
+    expect(next.agents.some((agent) => agent.id === '../x?y#z')).toBe(false)
+    expect(next.logs.at(-1)?.message).toContain('agent id outside')
+    const ok = applyEvent(initial(), event({ type: 'agent.registered', agent: { ...base, id: 'f3a9-uuid_like' } }))
+    expect(ok.agents.some((agent) => agent.id === 'f3a9-uuid_like')).toBe(true)
+  })
+})

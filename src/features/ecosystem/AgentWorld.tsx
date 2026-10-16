@@ -4,6 +4,7 @@ import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
+import { agentHref } from '@/config/navigation'
 import { AgentStateBadge } from '@/components/ui/StatusBadge'
 import { STATUS_META } from '@/design/status'
 import type { Agent } from '@/domain/types'
@@ -71,7 +72,7 @@ export function AgentWorld({ agent, rect, scale }: AgentWorldProps) {
 
   return (
     <Link
-      href={`/agents/${agent.id}`}
+      href={agentHref(agent.id)}
       aria-label={`${agent.name}, ${paused ? 'paused' : meta.description}`}
       className="absolute block rounded-card"
       style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}

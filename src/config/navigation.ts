@@ -37,3 +37,17 @@ export function isNavItemActive(pathname: string, href: string): boolean {
 export function isMoreActive(pathname: string): boolean {
   return MORE_ITEMS.some((item) => isNavItemActive(pathname, item.href))
 }
+
+/** Link to an agent's page. The id is encoded: one from an external agent may hold /, ?, # or %. */
+export function agentHref(agentId: string): string {
+  return `/agents/${encodeURIComponent(agentId)}`
+}
+
+/** Reads the id back from the URL segment, which Next hands over still encoded; null when malformed. */
+export function decodeAgentId(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return null
+  }
+}

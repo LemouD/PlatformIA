@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMoreActive, isNavItemActive, MOBILE_TABS, MORE_ITEMS, NAV_ITEMS } from './navigation'
+import { agentHref, decodeAgentId, isMoreActive, isNavItemActive, MOBILE_TABS, MORE_ITEMS, NAV_ITEMS } from './navigation'
 
 describe('NAV_ITEMS', () => {
   it('lists the seven sections in mockup order', () => {
@@ -47,5 +47,17 @@ describe('phone navigation', () => {
     expect(isMoreActive('/tools/web')).toBe(true)
     expect(isMoreActive('/agents')).toBe(false)
     expect(isMoreActive('/')).toBe(false)
+  })
+})
+
+describe('agent links', () => {
+  it('encodes ids so no character can bend the route', () => {
+    expect(agentHref('coding')).toBe('/agents/coding')
+    expect(agentHref('a/b?c#d%e ../x')).toBe('/agents/a%2Fb%3Fc%23d%25e%20..%2Fx')
+  })
+
+  it('reads the id back, and refuses a malformed segment', () => {
+    expect(decodeAgentId('a%2Fb%3Fc%23d%25e%20..%2Fx')).toBe('a/b?c#d%e ../x')
+    expect(decodeAgentId('%E0%A4%A')).toBeNull()
   })
 })
