@@ -1,3 +1,4 @@
+import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 import type { ChatLlmClient, ChatRequest, ChatResult } from '../conversation/types'
 import { classifyError } from './anthropic-client'
